@@ -1,0 +1,35 @@
+model_provider = "amd_llm"
+personality = "pragmatic"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "ultra"
+
+# Lifecycle hooks (~/.codex/hooks.json) are Stable and default-on in current
+# Codex, but enable explicitly so the publish guard still loads if a pinned or
+# older build leaves the feature off.
+[features]
+hooks = true
+
+[model_providers.amd_llm]
+name = "amd_llm"
+base_url = "https://llm-api.amd.com/OpenAI/"
+
+[model_providers.amd_llm.env_http_headers]
+"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
+
+# Persisted hook trust state. Codex matches the absolute hooks.json path
+# verbatim, so chezmoi renders the current home directory for each machine.
+# See openai/codex#6646 and #21615.
+[hooks.state]
+
+[hooks.state."{{ .chezmoi.homeDir }}/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:519db058169a13bc0fe89df01d643f9cb43a08a4a48f5f38efe9b0a4de08abb6"
+enabled = true
+
+[projects."{{ .chezmoi.homeDir }}/development/code_snippets"]
+trust_level = "trusted"
+
+[tui.model_availability_nux]
+"gpt-5.6-sol" = 4
+
+[features.multi_agent_v2]
+tool_namespace = "agents"
