@@ -103,6 +103,27 @@ test_dry_run_changes_nothing() (
     grep -Fq 'no files were changed' "$fixture/dry-run.log"
 )
 
+test_broken_owned_links_are_recovered() (
+    new_fixture
+    trap cleanup_fixture EXIT
+
+    ln -s -- "$stow_dir/inputrc/dot-inputrc" "$home/.inputrc"
+    mkdir -p "$home/.codex/skills"
+    ln -s -- "$stow_dir/codex/dot-codex/skills/work-on-llvm" \
+        "$home/.codex/skills/work-on-llvm"
+    ln -s -- "$stow_dir/codex/sync-skills.sh" "$home/sync-skills.sh"
+
+    run_migration > "$fixture/migration.log" 2>&1
+
+    test -f "$home/.inputrc"
+    test ! -L "$home/.inputrc"
+    test -d "$home/.codex/skills/work-on-llvm"
+    test ! -L "$home/.codex/skills/work-on-llvm"
+    test ! -e "$home/sync-skills.sh"
+    grep -Fq 'legacy link is broken and will be replaced' "$fixture/migration.log"
+    test -z "$(cm status)"
+)
+
 test_unexpected_symlink_is_refused() (
     new_fixture
     trap cleanup_fixture EXIT
@@ -178,6 +199,7 @@ EOF
 
 test_success_and_idempotence
 test_dry_run_changes_nothing
+test_broken_owned_links_are_recovered
 test_unexpected_symlink_is_refused
 test_modified_legacy_content_requires_opt_in
 test_non_stow_file_is_never_overwritten
