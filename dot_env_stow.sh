@@ -10,7 +10,14 @@ path_prepend() {
 }
 path_prepend "$HOME/.local/bin"
 path_prepend "$HOME/proot/nvim/bin"
-path_prepend "$HOME/proot/chez_moi/bin"
+path_prepend "$HOME/proot/bin"
+# Go toolchain (installed under ~/proot/go), when present. Guarded like the
+# entries above so hosts without it are unaffected and nested shells don't
+# accumulate duplicate PATH entries.
+if [ -d "$HOME/proot/go" ]; then
+    export GOROOT="$HOME/proot/go"
+    path_prepend "$GOROOT/bin"
+fi
 export PATH
 [ -r "$HOME/.local/bin/env" ] && source "$HOME/.local/bin/env"
 export NVM_DIR="$HOME/.nvm"

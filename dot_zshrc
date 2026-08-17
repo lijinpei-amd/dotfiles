@@ -1,0 +1,17 @@
+# Interactive zsh configuration (managed by chezmoi).
+unsetopt BEEP
+
+# Load Oh My Zsh (installed by setup_dev_environment.sh). Set the theme first so
+# oh-my-zsh.sh loads robbyrussell's git-prompt colours; the custom PROMPT and
+# git prefix below then override the parts we want to differ. The [ -s ] guard
+# keeps a fresh shell working if Oh My Zsh is not installed yet.
+: "${ZSH:=$HOME/.oh-my-zsh}"
+export ZSH
+ZSH_THEME="robbyrussell"
+[ -s "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
+
+PROMPT="%(!.%{%F{yellow}%}.)$USER @ %{$fg[white]%}%M %{$fg[blue]%}%d"
+PROMPT+=$'\n'
+PROMPT+="%(?:%{$fg_bold[green]%}%1{➜%} :%{$fg_bold[red]%}%1{➜%} ) %{$reset_color%}"
+PROMPT+='$(git_prompt_info)'
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}(%{$fg[red]%}"
