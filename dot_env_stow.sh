@@ -1,5 +1,16 @@
 alias vim=nvim
 
+# Ensure a UTF-8 locale so multibyte/box-drawing glyphs (tmux panes, Claude
+# Code's TUI, etc.) render instead of collapsing to '_'. tmux's persistent
+# server can start without SSH-forwarded LANG/LC_*, leaving its panes in the
+# C/POSIX locale. Only set a default when the inherited locale isn't already
+# UTF-8, so a forwarded locale (e.g. en_US.UTF-8) is preserved. C.UTF-8 is the
+# UTF-8 locale available without locale-gen.
+case "${LC_ALL:-${LANG:-}}" in
+    *[Uu][Tt][Ff]8* | *[Uu][Tt][Ff]-8*) ;;
+    *) export LANG=C.UTF-8 ;;
+esac
+
 # Prepend to PATH only if not already present, so this layer (sourced on every
 # shell, including nested ones) doesn't accumulate duplicate entries.
 path_prepend() {
