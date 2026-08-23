@@ -136,6 +136,32 @@ if clangd_cmd then
 	vim.lsp.enable('clangd')
 end
 
+if vim.fn.executable('pyright-langserver') == 1 then
+	vim.lsp.config('pyright', {
+		cmd = { 'pyright-langserver', '--stdio' },
+		filetypes = { 'python' },
+		root_markers = {
+			'pyrightconfig.json',
+			'pyproject.toml',
+			'setup.py',
+			'setup.cfg',
+			'requirements.txt',
+			'.git',
+		},
+		settings = {
+			python = {
+				analysis = {
+					autoImportCompletions = true,
+					autoSearchPaths = true,
+					diagnosticMode = 'openFilesOnly',
+					useLibraryCodeForTypes = true,
+				},
+			},
+		},
+	})
+	vim.lsp.enable('pyright')
+end
+
 -- Show LSP diagnostics
 vim.diagnostic.config({
 	virtual_text = true,
@@ -173,6 +199,31 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
 -- <C-\>n as a shorthand for the built-in <C-\><C-n> (exit terminal mode)
 vim.keymap.set('t', [[<C-\>n]], [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+
+-- Pass OSC 9 requests from embedded terminals through to the host terminal.
+vim.api.nvim_create_autocmd("TermRequest", {
+	group = vim.api.nvim_create_augroup("osc9_forward", { clear = true }),
+	desc = "Forward OSC 9 requests to the host terminal",
+	callback = function(args)
+		local data = args.data
+		local sequence = type(data) == "table" and data.sequence or data
+		if type(sequence) ~= "string" or not sequence:match("^\27%]9;") then return end
+
+		local terminator = type(data) == "table" and data.terminator or nil
+		local request = sequence .. (terminator or "\7")
+		if vim.env.TMUX and vim.env.TMUX ~= "" then
+			request = "\27Ptmux;" .. request:gsub("\27", "\27\27") .. "\27\\"
+		end
+		vim.api.nvim_ui_send(request)
+	end,
+})
+
+-- The above only ever sees a bare OSC 9 because ~/.env_stow.sh unsets $TMUX in
+-- nvim's child processes (guarded by $NVIM). Were $TMUX visible to the child,
+-- Claude Code would DCS-wrap the OSC itself and libvterm would abort the parse
+-- on the doubled ESC, so TermRequest would never fire. Keeping that rule in the
+-- shell env layer rather than around :terminal also covers terminals spawned
+-- programmatically by plugins, which a cmdline abbreviation never sees.
 
 -- Window/tab navigation from normal, insert, and terminal modes.
 -- <C-\><suffix> lands in normal mode at the destination;
@@ -212,12 +263,12 @@ for _, mode in ipairs(nav_modes) do
   end
 end
 
--- Forward focus events into explicitly opted-in :terminal buffers, combining
+-- Forward focus events into :terminal buffers, combining
 -- nvim's own FocusGained/FocusLost with the buffer/window the user is viewing.
 -- Requires the outer terminal to emit focus reporting and, in tmux,
 -- `set -g focus-events on`. Without those, nvim never sees focus transitions
--- and embedded programs will believe nvim is permanently focused. Run
--- :TerminalFocusForward in a terminal buffer to opt in, or use ! to opt out.
+-- and embedded programs will believe nvim is permanently focused. New terminal
+-- buffers opt in automatically; use :TerminalFocusForward! to opt out.
 do
 	local nvim_focused = true
 	local last_sent = {}
@@ -258,6 +309,7 @@ do
 	vim.api.nvim_create_autocmd("TermOpen", {
 		group = group,
 		callback = function(args)
+			vim.b[args.buf].terminal_focus_forward = true
 			vim.api.nvim_buf_create_user_command(args.buf, "TerminalFocusForward", function(opts)
 				vim.b[args.buf].terminal_focus_forward = not opts.bang
 				last_sent[args.buf] = nil

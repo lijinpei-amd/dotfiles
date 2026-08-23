@@ -1,0 +1,61 @@
+#!/bin/bash
+# chezmoi modify_ script: stdin is the current ~/.codex/config.toml, stdout
+# replaces it. Codex rewrites parts of this file at runtime -- [projects] trust
+# levels as directories are trusted, [hooks.state] hashes whenever hooks.json
+# changes, and the [tui.model_availability_nux] counters. Managing the whole
+# file would leave it permanently dirty in `chezmoi diff`, so the settings below
+# are enforced and those three section families are passed through untouched.
+#
+# Kept as a .tmpl so template actions are available later; none are used yet.
+# Beware when adding shell here: Go template delimiters in a script body -- easy
+# to introduce with awk or jq braces -- are evaluated silently rather than
+# erroring, mangling the script. If that comes up, switch to inert delimiters
+# with chezmoi's left/right-delimiter template directive on line 1. (Spelling
+# that directive out here, even in a comment, makes chezmoi eat the line.)
+set -euo pipefail
+
+# Sections Codex owns. Matches the table itself ("[hooks.state]") and any
+# subtable ("[projects.\"/path\"]"); everything until the next header is kept.
+state=$(awk '
+	/^[[:space:]]*\[/ {
+		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux)(\]|\.)/)
+	}
+	keep
+')
+
+cat <<'MANAGED'
+model_provider = "amd_llm"
+personality = "pragmatic"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
+
+# Lifecycle hooks (~/.codex/hooks.json) are Stable and default-on in current
+# Codex, but enable explicitly so the publish guard still loads if a pinned or
+# older build leaves the feature off.
+[features]
+hooks = true
+
+[model_providers.amd_llm]
+name = "amd_llm"
+base_url = "https://llm-api.amd.com/OpenAI/"
+
+[model_providers.amd_llm.env_http_headers]
+"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
+
+[tui]
+# Notify when a turn finishes or Codex needs approval or plan-mode input.
+notifications = ["agent-turn-complete", "approval-requested", "plan-mode-prompt"]
+notification_condition = "unfocused"
+notification_method = "auto"
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+# Everything below is written by Codex and preserved verbatim on each apply.
+# Hook trust is keyed by the absolute hooks.json path, so it is deliberately not
+# carried between machines -- Codex re-prompts. See openai/codex#6646 and #21615.
+MANAGED
+
+if printf '%s' "$state" | grep -q '[^[:space:]]'; then
+	printf '\n%s\n' "$state"
+fi

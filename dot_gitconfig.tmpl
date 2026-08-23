@@ -5,3 +5,14 @@
 	excludesfile = {{ .chezmoi.homeDir }}/.gitignore
 [init]
 	defaultBranch = main
+{{ if lookPath "git-lfs" -}}
+{{/* Written into ~/.gitconfig by `git lfs install`. Guarded rather than
+     unconditional because required = true makes git fail outright on any LFS
+     repo when the binary is missing, so machines without git-lfs must not get
+     it. Installing git-lfs later is enough for the next apply to add it. */ -}}
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+{{ end -}}

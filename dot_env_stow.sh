@@ -11,6 +11,26 @@ case "${LC_ALL:-${LANG:-}}" in
     *) export LANG=C.UTF-8 ;;
 esac
 
+# Hide $TMUX from processes nvim spawns. A tmux-aware program (Claude Code)
+# would otherwise wrap its OSC 9 desktop notification in tmux DCS passthrough,
+# \ePtmux;...\e\\, and nvim cannot forward that at all: the protocol doubles
+# every ESC, libvterm aborts a string on any ESC that is not part of ST, so
+# nvim's TermRequest never fires and the notification is lost. With $TMUX absent
+# the child emits bare OSC 9, which the osc9_forward autocmd in init.lua catches
+# and re-wraps for tmux at the hop where tmux really is the next consumer.
+#
+# $NVIM is set only in nvim's child processes, so nvim itself keeps $TMUX and
+# vim-tmux-navigator -- which reads it at call time on every navigation -- is
+# unaffected. Doing this here rather than around :terminal also covers terminals
+# spawned programmatically by plugins, which a cmdline abbreviation never sees.
+if [ -n "${NVIM:-}" ]; then
+    unset TMUX
+fi
+
+# bash returns from ~/.bashrc before sourcing anything when non-interactive, so
+# the rule above would not reach `bash -c ...`. $BASH_ENV is bash's ~/.zshenv.
+export BASH_ENV="$HOME/.bashenv"
+
 # Prepend to PATH only if not already present, so this layer (sourced on every
 # shell, including nested ones) doesn't accumulate duplicate entries.
 path_prepend() {
