@@ -8,6 +8,7 @@ unsetopt BEEP
 : "${ZSH:=$HOME/.oh-my-zsh}"
 export ZSH
 ZSH_THEME="robbyrussell"
+plugins=(vi-mode)
 [ -s "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
 PROMPT="%(!.%{%F{yellow}%}.)$USER @ %{$fg[white]%}%M %{$fg[blue]%}%d"
