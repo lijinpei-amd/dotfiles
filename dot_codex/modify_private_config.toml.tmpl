@@ -2,9 +2,11 @@
 # chezmoi modify_ script: stdin is the current ~/.codex/config.toml, stdout
 # replaces it. Codex rewrites parts of this file at runtime -- [projects] trust
 # levels as directories are trusted, [hooks.state] hashes whenever hooks.json
-# changes, and the [tui.model_availability_nux] counters. Managing the whole
-# file would leave it permanently dirty in `chezmoi diff`, so the settings below
-# are enforced and those three section families are passed through untouched.
+# changes, the [tui.model_availability_nux] counters, and the [marketplaces] and
+# [plugins] entries for the bundled marketplace it unpacks into .codex/.tmp.
+# Managing the whole file would leave it permanently dirty in `chezmoi diff`, so
+# the settings below are enforced and those section families are passed through
+# untouched.
 #
 # Kept as a .tmpl so template actions are available later; none are used yet.
 # Beware when adding shell here: Go template delimiters in a script body -- easy
@@ -18,7 +20,7 @@ set -euo pipefail
 # subtable ("[projects.\"/path\"]"); everything until the next header is kept.
 state=$(awk '
 	/^[[:space:]]*\[/ {
-		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux)(\]|\.)/)
+		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins)(\]|\.)/)
 	}
 	keep
 ')
@@ -28,6 +30,7 @@ model_provider = "amd_llm"
 personality = "pragmatic"
 model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
+service_tier = "fast"
 
 # Lifecycle hooks (~/.codex/hooks.json) are Stable and default-on in current
 # Codex, but enable explicitly so the publish guard still loads if a pinned or
