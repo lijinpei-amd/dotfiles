@@ -23,5 +23,6 @@
   },
   "effortLevel": "xhigh",
   "skipDangerousModePermissionPrompt": true,
-  "preferredNotifChannel": "iterm2"
+  "preferredNotifChannel": "iterm2",
+  "tui": "fullscreen"
 }
