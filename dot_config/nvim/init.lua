@@ -214,7 +214,9 @@ vim.api.nvim_create_autocmd("TermRequest", {
 		if vim.env.TMUX and vim.env.TMUX ~= "" then
 			request = "\27Ptmux;" .. request:gsub("\27", "\27\27") .. "\27\\"
 		end
-		vim.api.nvim_ui_send(request)
+		-- Channel 2 is the TUI's tty. nvim_chan_send() rather than
+		-- io.stdout:write(), which doesn't handle EAGAIN (neovim#26688).
+		vim.api.nvim_chan_send(2, request)
 	end,
 })
 
