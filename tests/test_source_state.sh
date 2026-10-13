@@ -31,6 +31,16 @@ trust_level = "trusted"
 [marketplaces.jinpei-skills]
 source_type = "local"
 source = "/stale/skills"
+
+[marketplaces.codex-owned]
+source_type = "local"
+source = "/seeded/marketplace"
+
+[plugins."working-on-llvm@jinpei-skills"]
+enabled = false
+
+[plugins."retired@jinpei-skills"]
+enabled = true
 TOML
 
 # Scripts call out to tools such as codex that the test does not provide.
@@ -78,6 +88,21 @@ if grep -Fq '/stale/skills' "$test_home/.codex/config.toml"; then
 fi
 grep -Fq 'source = "https://github.com/lijinpei-amd/skills.git"' \
     "$test_home/.codex/config.toml"
+# jinpei-skills tables are corrected where Codex put them, not moved: Codex
+# inserts its own tables beside them, and moving them would never settle.
+header_line() {
+    grep -nF "$1" "$test_home/.codex/config.toml" | cut -d: -f1
+}
+test "$(header_line '[marketplaces.jinpei-skills]')" -lt "$(header_line '[marketplaces.codex-owned]')"
+test "$(header_line '[marketplaces.codex-owned]')" -lt \
+    "$(header_line '[plugins."working-on-llvm@jinpei-skills"]')"
+python3 - "$test_home/.codex/config.toml" <<'PY'
+import sys, tomllib
+plugins = tomllib.load(open(sys.argv[1], "rb"))["plugins"]
+assert plugins["working-on-llvm@jinpei-skills"] == {"enabled": True}, plugins
+assert plugins["amdgpu-isa-builder@jinpei-skills"] == {"enabled": False}, plugins
+assert "retired@jinpei-skills" not in plugins, plugins
+PY
 
 for script in "$repo_root"/.chezmoiscripts/*.tmpl; do
     cm execute-template < "$script" | bash -n

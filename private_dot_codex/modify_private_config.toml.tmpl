@@ -8,7 +8,7 @@
 # Managing the whole file would leave it permanently dirty in `chezmoi diff`, so
 # the settings below are enforced and those section families are passed through
 # untouched -- except the jinpei-skills marketplace and its plugins, which are
-# enforced so a new machine gets them too.
+# enforced so a new machine gets them too (see JINPEI_TABLES).
 #
 # A .tmpl so model_catalog_json can follow the home directory.
 # Beware when adding shell here: Go template delimiters in a script body -- easy
@@ -18,16 +18,81 @@
 # that directive out here, even in a comment, makes chezmoi eat the line.)
 set -euo pipefail
 
+# The jinpei-skills tables are enforced but left wherever Codex has put them:
+# Codex inserts its own [marketplaces] and [plugins] tables beside them, so
+# moving them back on each apply would leave the file permanently dirty. Each is
+# rewritten in place, or appended if missing; any other jinpei-skills plugin
+# table is dropped. Codex reads a Git marketplace only from its snapshot under
+# .codex/.tmp, which .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh
+# creates.
+#
+# amdgpu-isa-builder is off between rebuilds of the amd-gpu-isa skill: an enabled
+# plugin costs context in every session. `codex plugin add
+# amdgpu-isa-builder@jinpei-skills` turns it on for a rebuild; the next chezmoi
+# apply turns it off again.
+export JINPEI_TABLES='[marketplaces.jinpei-skills]
+source_type = "git"
+source = "https://github.com/lijinpei-amd/skills.git"
+
+[plugins."working-on-llvm@jinpei-skills"]
+enabled = true
+
+[plugins."writing-python-docstrings-and-comments@jinpei-skills"]
+enabled = true
+
+[plugins."amdgpu-isa-builder@jinpei-skills"]
+enabled = false'
+
 # Sections Codex owns. Matches the table itself ("[hooks.state]") and any
 # subtable ("[projects.\"/path\"]"); everything until the next header is kept.
-# jinpei-skills tables are dropped here and re-emitted from MANAGED below, so a
-# stale copy cannot duplicate them.
 state=$(awk '
-	/^[[:space:]]*\[/ {
-		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice)(\]|\.)/) \
-			&& ($0 !~ /^\[(marketplaces\.jinpei-skills|plugins\."[^"]*@jinpei-skills")\]/)
+	# Print one line, owing a blank separator after a rewritten table; track
+	# whether the last line was blank so tables stay one blank line apart.
+	function emit(line) {
+		if (owed && line != "")
+			print ""
+		owed = 0
+		print line
+		any = 1
+		blank = (line == "")
 	}
-	keep
+	function emit_table(h,    m, j, rows) {
+		emit(h)
+		m = split(body[h], rows, /\n/)
+		for (j = 1; j <= m; j++)
+			emit(rows[j])
+	}
+	BEGIN {
+		n = split(ENVIRON["JINPEI_TABLES"], blocks, /\n\n/)
+		for (i = 1; i <= n; i++) {
+			split(blocks[i], lines, /\n/)
+			header[i] = lines[1]
+			body[lines[1]] = substr(blocks[i], length(lines[1]) + 2)
+		}
+	}
+	/^[[:space:]]*\[/ {
+		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice)(\]|\.)/)
+		if ($0 in body) {
+			emit_table($0)
+			written[$0] = 1
+			owed = 1
+			keep = 0
+			next
+		}
+		if ($0 ~ /^\[(marketplaces\.jinpei-skills|plugins\."[^"]*@jinpei-skills")\]/)
+			keep = 0
+	}
+	keep { emit($0) }
+	END {
+		for (i = 1; i <= n; i++) {
+			if (header[i] in written)
+				continue
+			if (any && !blank)
+				print ""
+			owed = 0
+			emit_table(header[i])
+		}
+	}
 ')
 
 cat <<'MANAGED'
@@ -73,24 +138,6 @@ url = "https://developers.openai.com/mcp"
 [memories]
 generate_memories = true
 use_memories = true
-
-# Codex reads a Git marketplace only from its snapshot under .codex/.tmp, which
-# .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh creates.
-[marketplaces.jinpei-skills]
-source_type = "git"
-source = "https://github.com/lijinpei-amd/skills.git"
-
-[plugins."working-on-llvm@jinpei-skills"]
-enabled = true
-
-[plugins."writing-python-docstrings-and-comments@jinpei-skills"]
-enabled = true
-
-# Off between rebuilds of the amd-gpu-isa skill: an enabled plugin costs context
-# in every session. `codex plugin add amdgpu-isa-builder@jinpei-skills` turns it
-# on for a rebuild; the next chezmoi apply turns it off again.
-[plugins."amdgpu-isa-builder@jinpei-skills"]
-enabled = false
 
 # Everything below is written by Codex and preserved verbatim on each apply.
 # Hook trust is keyed by the absolute hooks.json path, so it is deliberately not
