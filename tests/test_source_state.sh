@@ -27,11 +27,16 @@ trust_level = "trusted"
 
 [notice.model_migrations]
 "old-model" = "new-model"
+
+[marketplaces.jinpei-skills]
+source_type = "local"
+source = "/stale/skills"
 TOML
 
-cm --force --no-tty apply
-cm verify
-test -z "$(cm status)"
+# Scripts call out to tools such as codex that the test does not provide.
+cm --force --no-tty apply --exclude=scripts
+cm verify --exclude=scripts
+test -z "$(cm status --exclude=scripts)"
 
 test ! -e "$test_home/README.md"
 test ! -e "$test_home/tests"
@@ -67,5 +72,15 @@ if grep -Fq 'stale-model' "$test_home/.codex/config.toml"; then
 fi
 grep -Fq '[projects."/seeded/project"]' "$test_home/.codex/config.toml"
 grep -Fq '"old-model" = "new-model"' "$test_home/.codex/config.toml"
+if grep -Fq '/stale/skills' "$test_home/.codex/config.toml"; then
+    echo "error: Codex config kept a stale jinpei-skills marketplace" >&2
+    exit 1
+fi
+grep -Fq 'source = "https://github.com/lijinpei-amd/skills.git"' \
+    "$test_home/.codex/config.toml"
+
+for script in "$repo_root"/.chezmoiscripts/*.tmpl; do
+    cm execute-template < "$script" | bash -n
+done
 
 echo "source-state tests passed"

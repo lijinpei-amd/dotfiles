@@ -7,7 +7,8 @@
 # and the [notice] records of model migrations it has already announced.
 # Managing the whole file would leave it permanently dirty in `chezmoi diff`, so
 # the settings below are enforced and those section families are passed through
-# untouched.
+# untouched -- except the jinpei-skills marketplace and its plugins, which are
+# enforced so a new machine gets them too.
 #
 # A .tmpl so model_catalog_json can follow the home directory.
 # Beware when adding shell here: Go template delimiters in a script body -- easy
@@ -19,9 +20,12 @@ set -euo pipefail
 
 # Sections Codex owns. Matches the table itself ("[hooks.state]") and any
 # subtable ("[projects.\"/path\"]"); everything until the next header is kept.
+# jinpei-skills tables are dropped here and re-emitted from MANAGED below, so a
+# stale copy cannot duplicate them.
 state=$(awk '
 	/^[[:space:]]*\[/ {
-		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice)(\]|\.)/)
+		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice)(\]|\.)/) \
+			&& ($0 !~ /^\[(marketplaces\.jinpei-skills|plugins\."[^"]*@jinpei-skills")\]/)
 	}
 	keep
 ')
@@ -69,6 +73,18 @@ url = "https://developers.openai.com/mcp"
 [memories]
 generate_memories = true
 use_memories = true
+
+# Codex reads a Git marketplace only from its snapshot under .codex/.tmp, which
+# .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh creates.
+[marketplaces.jinpei-skills]
+source_type = "git"
+source = "https://github.com/lijinpei-amd/skills.git"
+
+[plugins."working-on-llvm@jinpei-skills"]
+enabled = true
+
+[plugins."writing-python-docstrings-and-comments@jinpei-skills"]
+enabled = true
 
 # Everything below is written by Codex and preserved verbatim on each apply.
 # Hook trust is keyed by the absolute hooks.json path, so it is deliberately not
