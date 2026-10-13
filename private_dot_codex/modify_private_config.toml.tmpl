@@ -86,6 +86,12 @@ enabled = true
 [plugins."writing-python-docstrings-and-comments@jinpei-skills"]
 enabled = true
 
+# Off between rebuilds of the amd-gpu-isa skill: an enabled plugin costs context
+# in every session. `codex plugin add amdgpu-isa-builder@jinpei-skills` turns it
+# on for a rebuild; the next chezmoi apply turns it off again.
+[plugins."amdgpu-isa-builder@jinpei-skills"]
+enabled = false
+
 # Everything below is written by Codex and preserved verbatim on each apply.
 # Hook trust is keyed by the absolute hooks.json path, so it is deliberately not
 # carried between machines -- Codex re-prompts. See openai/codex#6646 and #21615.

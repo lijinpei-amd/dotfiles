@@ -7,4 +7,17 @@
 # config template: {{ include "private_dot_codex/modify_private_config.toml.tmpl" | sha256sum }}
 set -euo pipefail
 codex plugin marketplace upgrade jinpei-skills
+
+# upgrade installs the configured plugins only when the snapshot changes, so add
+# any still missing from the cache. `plugin add` also sets enabled = true; put
+# back the config chezmoi just wrote, which holds the intended flags.
+config="$HOME/.codex/config.toml"
+cp -p -- "$config" "$config.chezmoi-orig"
+trap 'mv -f -- "$config.chezmoi-orig" "$config"' EXIT
+sed -n 's/^\[plugins\."\([^"]*\)@jinpei-skills"\]$/\1/p' "$config" |
+while IFS= read -r plugin; do
+	if [ ! -d "$HOME/.codex/plugins/cache/jinpei-skills/$plugin" ]; then
+		codex plugin add "$plugin@jinpei-skills"
+	fi
+done
 {{ end -}}

@@ -13,7 +13,9 @@
     "i-have-adhd@i-have-adhd": true,
     "superpowers@superpowers-dev": true,
     "mattpocock-skills@mattpocock": true,
-    "working-on-llvm@jinpei-skills": true
+    "working-on-llvm@jinpei-skills": true,
+    "writing-python-docstrings-and-comments@jinpei-skills": true,
+    "amdgpu-isa-builder@jinpei-skills": false
   },
   "extraKnownMarketplaces": {
     "i-have-adhd": {
