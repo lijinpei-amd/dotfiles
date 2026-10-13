@@ -8,7 +8,7 @@ The repository manages:
 - Git identity, defaults, and global ignore rules;
 - Readline, tmux, and Neovim configuration;
 - ccache and GDB configuration for LLVM worktrees;
-- Claude Code and Codex settings, publish guards, and LLVM skills.
+- Claude Code and Codex settings, and the Codex publish guard.
 
 The ccache, GDB, Git, and Codex files are templates. Absolute paths are rendered
 from the current machine's home directory.

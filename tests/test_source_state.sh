@@ -24,7 +24,6 @@ test ! -e "$test_home/README.md"
 test ! -e "$test_home/scripts"
 test ! -e "$test_home/tests"
 
-test -x "$test_home/.claude/hooks/confirm-publish.sh"
 test -x "$test_home/.codex/hooks/confirm-publish.sh"
 test -x "$test_home/.tmux/name-session.sh"
 
@@ -36,7 +35,6 @@ python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' \
 bash -n \
     "$test_home/.bashrc_stow" \
     "$test_home/.env_stow.sh" \
-    "$test_home/.claude/hooks/confirm-publish.sh" \
     "$test_home/.codex/hooks/confirm-publish.sh" \
     "$test_home/.tmux/name-session.sh"
 zsh -n "$test_home/.zshenv_stow" "$test_home/.zshrc_stow"

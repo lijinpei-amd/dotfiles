@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for the Claude and Codex publish guards."""
+"""Regression tests for the Codex publish guard."""
 
 import json
 import os
@@ -12,7 +12,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS = {
-    "claude": REPO_ROOT / "dot_claude/hooks/executable_confirm-publish.sh",
     "codex": REPO_ROOT / "dot_codex/hooks/executable_confirm-publish.sh",
 }
 

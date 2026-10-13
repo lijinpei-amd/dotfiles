@@ -3,12 +3,13 @@
 # replaces it. Codex rewrites parts of this file at runtime -- [projects] trust
 # levels as directories are trusted, [hooks.state] hashes whenever hooks.json
 # changes, the [tui.model_availability_nux] counters, and the [marketplaces] and
-# [plugins] entries for the bundled marketplace it unpacks into .codex/.tmp.
+# [plugins] entries for the bundled marketplace it unpacks into .codex/.tmp,
+# and the [notice] records of model migrations it has already announced.
 # Managing the whole file would leave it permanently dirty in `chezmoi diff`, so
 # the settings below are enforced and those section families are passed through
 # untouched.
 #
-# Kept as a .tmpl so template actions are available later; none are used yet.
+# A .tmpl so model_catalog_json can follow the home directory.
 # Beware when adding shell here: Go template delimiters in a script body -- easy
 # to introduce with awk or jq braces -- are evaluated silently rather than
 # erroring, mangling the script. If that comes up, switch to inert delimiters
@@ -20,7 +21,7 @@ set -euo pipefail
 # subtable ("[projects.\"/path\"]"); everything until the next header is kept.
 state=$(awk '
 	/^[[:space:]]*\[/ {
-		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins)(\]|\.)/)
+		keep = ($0 ~ /^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice)(\]|\.)/)
 	}
 	keep
 ')
@@ -28,7 +29,8 @@ state=$(awk '
 cat <<'MANAGED'
 model_provider = "amd_llm"
 personality = "pragmatic"
-model = "gpt-5.6-sol"
+model = "gpt-6-luna"
+model_catalog_json = "{{ .chezmoi.homeDir }}/.codex/amd-pinned-models.json"
 model_reasoning_effort = "xhigh"
 service_tier = "fast"
 
@@ -43,7 +45,9 @@ sandbox_mode = "danger-full-access"
 # Codex, but enable explicitly so the publish guard still loads if a pinned or
 # older build leaves the feature off.
 [features]
+auth_elicitation = true
 hooks = true
+memories = true
 
 [model_providers.amd_llm]
 name = "amd_llm"
@@ -57,9 +61,14 @@ base_url = "https://llm-api.amd.com/OpenAI/"
 notifications = ["agent-turn-complete", "approval-requested", "plan-mode-prompt"]
 notification_condition = "unfocused"
 notification_method = "auto"
+screen_reader_detection_done = true
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+
+[memories]
+generate_memories = true
+use_memories = true
 
 # Everything below is written by Codex and preserved verbatim on each apply.
 # Hook trust is keyed by the absolute hooks.json path, so it is deliberately not

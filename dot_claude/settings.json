@@ -8,21 +8,42 @@
   },
   "model": "opus[1m]",
   "disableClaudeAiConnectors": true,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/confirm-publish.sh"
-          }
-        ]
-      }
-    ]
+  "enabledPlugins": {
+    "working-on-llvm@jinpei-skills": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "i-have-adhd@i-have-adhd": true,
+    "superpowers@superpowers-dev": true,
+    "mattpocock-skills@mattpocock": true
   },
+  "extraKnownMarketplaces": {
+    "jinpei-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/mnt/nvme2/jinpli/workspace/home/jinpli/development/skills"
+      }
+    },
+    "i-have-adhd": {
+      "source": {
+        "source": "github",
+        "repo": "ayghri/i-have-adhd"
+      }
+    },
+    "superpowers-dev": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/obra/superpowers.git"
+      }
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      }
+    }
+  },
+  "outputStyle": "Concise",
   "effortLevel": "xhigh",
+  "tui": "default",
   "skipDangerousModePermissionPrompt": true,
-  "preferredNotifChannel": "iterm2",
-  "tui": "fullscreen"
+  "preferredNotifChannel": "iterm2"
 }
