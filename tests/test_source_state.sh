@@ -43,6 +43,15 @@ enabled = false
 enabled = true
 TOML
 
+# pi rewrites settings.json the same way: it records the last-used model and
+# changelog version itself, and writes no trailing newline.
+mkdir -p "$test_home/.pi/agent"
+printf '%s' '{
+  "defaultModel": "seeded-model",
+  "lastChangelogVersion": "9.9.9",
+  "packages": ["stale-package"]
+}' > "$test_home/.pi/agent/settings.json"
+
 # Scripts call out to tools such as codex that the test does not provide.
 cm --force --no-tty apply --exclude=scripts
 cm verify --exclude=scripts
@@ -103,6 +112,27 @@ assert plugins["working-on-llvm@jinpei-skills"] == {"enabled": True}, plugins
 assert plugins["amdgpu-isa-builder@jinpei-skills"] == {"enabled": False}, plugins
 assert "retired@jinpei-skills" not in plugins, plugins
 PY
+
+pi_settings="$test_home/.pi/agent/settings.json"
+test "$(jq -r .defaultModel "$pi_settings")" = seeded-model
+test "$(jq -r .defaultProvider "$pi_settings")" = amd-anthropic
+test "$(jq -r .lastChangelogVersion "$pi_settings")" = 9.9.9
+jq -e '.packages | index("git:github.com/lijinpei-amd/skills")' "$pi_settings" >/dev/null
+test "$(jq -c .skills "$pi_settings")" = "[]"
+if jq -e '.packages | index("stale-package")' "$pi_settings" >/dev/null; then
+    echo "error: pi settings kept a stale managed key" >&2
+    exit 1
+fi
+test "$(tail -c1 "$pi_settings")" = "}"
+
+# models.json needs the machine-local piProxyBaseUrl; without it the file is
+# left alone rather than failing the whole apply.
+test ! -e "$test_home/.pi/agent/models.json"
+pi_models=$(cm --override-data '{"piProxyBaseUrl": "http://proxy.test:1"}' \
+    cat "$test_home/.pi/agent/models.json")
+printf '%s' "$pi_models" | jq empty
+printf '%s' "$pi_models" | grep -Fq '"baseUrl": "http://proxy.test:1/OpenAI"'
+printf '%s' "$pi_models" | grep -Fq '"baseUrl": "http://proxy.test:1/Anthropic"'
 
 for script in "$repo_root"/.chezmoiscripts/*.tmpl; do
     cm execute-template < "$script" | bash -n

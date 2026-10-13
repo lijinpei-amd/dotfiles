@@ -8,10 +8,24 @@ The repository manages:
 - Git identity, defaults, and global ignore rules;
 - Readline, tmux, and Neovim configuration;
 - ccache and GDB configuration for LLVM worktrees;
-- Claude Code and Codex settings, and the Codex publish guard.
+- Claude Code, Codex, and pi settings, and the Codex publish guard.
 
-The ccache, GDB, Git, and Codex files are templates. Absolute paths are rendered
-from the current machine's home directory.
+The ccache, GDB, Git, Codex, and pi files are templates. Absolute paths are
+rendered from the current machine's home directory.
+
+## Per-Machine Settings
+
+Values that differ between machines live in that machine's
+`~/.config/chezmoi/chezmoi.toml`, which is not part of this repository:
+
+```toml
+[data]
+    piProxyBaseUrl = "http://<host>:<port>"
+```
+
+| Key | Used by |
+| --- | --- |
+| `piProxyBaseUrl` | pi's `models.json`: the LLM gateway proxy, before `/OpenAI` or `/Anthropic`. Unset, `models.json` is left unmanaged. |
 
 ## Fresh Machine
 
