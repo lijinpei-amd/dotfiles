@@ -59,6 +59,8 @@ grep -Fq "_development_root = \"$test_home/development\"" \
     "$test_home/.config/gdb/gdbinit"
 grep -Fq "model_catalog_json = \"$test_home/.codex/amd-pinned-models.json\"" \
     "$test_home/.codex/config.toml"
+# Codex refuses to load its config when model_catalog_json names a missing file.
+test -f "$test_home/.codex/amd-pinned-models.json"
 if grep -Fq 'stale-model' "$test_home/.codex/config.toml"; then
     echo "error: Codex config kept a stale managed key" >&2
     exit 1
