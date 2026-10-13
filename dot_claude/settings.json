@@ -9,19 +9,13 @@
   "model": "opus[1m]",
   "disableClaudeAiConnectors": true,
   "enabledPlugins": {
-    "working-on-llvm@jinpei-skills": true,
     "pyright-lsp@claude-plugins-official": true,
     "i-have-adhd@i-have-adhd": true,
     "superpowers@superpowers-dev": true,
-    "mattpocock-skills@mattpocock": true
+    "mattpocock-skills@mattpocock": true,
+    "working-on-llvm@jinpei-skills": true
   },
   "extraKnownMarketplaces": {
-    "jinpei-skills": {
-      "source": {
-        "source": "directory",
-        "path": "/mnt/nvme2/jinpli/workspace/home/jinpli/development/skills"
-      }
-    },
     "i-have-adhd": {
       "source": {
         "source": "github",
@@ -38,6 +32,12 @@
       "source": {
         "source": "github",
         "repo": "mattpocock/skills"
+      }
+    },
+    "jinpei-skills": {
+      "source": {
+        "source": "github",
+        "repo": "lijinpei-amd/skills"
       }
     }
   },
