@@ -20,6 +20,14 @@
     stripComponents = 1
     checksum.sha256 = "ea2ca9a016487ba062b4a02e183eceaf5ef9b09016e1af0a5ff627a3af7a721c"
 
+# catppuccin/tmux v2.3.0. tpm loads it from plugins/tmux, the repository's
+# basename; keep this commit in step with the tag in dot_tmux.conf.
+[".tmux/plugins/tmux"]
+    type = "archive"
+    url = "https://codeload.github.com/catppuccin/tmux/tar.gz/d2d25bd3393fe43f19eb4fff6cdd2bdf5578e622"
+    stripComponents = 1
+    checksum.sha256 = "aacd5d5da02099b98f1e9b7a5c7789f2c5b7c78f1f14a8b8f69fb08c0d2f8284"
+
 [".local/share/nvim/site/autoload/plug.vim"]
     type = "file"
     url = "https://raw.githubusercontent.com/junegunn/vim-plug/88e31471818e9a29a8a20a0ee61360cfd7bdc1cd/plug.vim"
