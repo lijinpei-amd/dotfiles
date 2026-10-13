@@ -1,7 +1,7 @@
 # ~/.bashenv -- bash's analogue of ~/.zshenv, reached through $BASH_ENV (which
 # ~/.env_stow.sh exports) for NON-interactive bash, since ~/.bashrc returns
 # early before sourcing anything when there is no tty. Interactive bash gets the
-# same rule the ordinary way, via ~/.bashrc -> ~/.bashrc_stow -> ~/.env_stow.sh.
+# same rule the ordinary way, via ~/.bashrc -> ~/.env_stow.sh.
 #
 # Every non-interactive bash sources this file, so keep it to one cheap test.
 # See ~/.env_stow.sh for why nvim's children must not see $TMUX.
