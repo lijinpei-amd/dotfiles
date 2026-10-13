@@ -27,55 +27,8 @@ The repository is public, so HTTPS also works:
 chezmoi init --apply https://github.com/lijinpei-amd/dotfiles.git
 ```
 
-The managed shell fragments retain their historical `_stow` filenames because
-existing `~/.bashrc`, `~/.zshrc`, and `~/.zshenv` files source those names. The
-`code_snippets/setup_dev_environment.sh` script wires the zsh fragments while
-preserving existing shell startup files.
-
-## Migrate A Stow Machine
-
-Initialize without applying over the existing Stow links:
-
-```sh
-chezmoi init git@github.com:lijinpei-amd/dotfiles.git
-```
-
-If chezmoi was already initialized, update only its source checkout first:
-
-```sh
-git -C "$(chezmoi source-path)" pull --ff-only
-```
-
-Review the migration, then run it:
-
-```sh
-"$(chezmoi source-path)/scripts/migrate-from-stow.sh" --dry-run
-"$(chezmoi source-path)/scripts/migrate-from-stow.sh"
-```
-
-The default legacy package path is
-`~/development/code_snippets/dotfiles`. Override it when needed:
-
-```sh
-"$(chezmoi source-path)/scripts/migrate-from-stow.sh" \
-  --stow-dir /path/to/code_snippets/dotfiles
-```
-
-The script renders and compares all desired files before changing anything. It
-removes only links that resolve to an exact known Stow source, refuses unrelated
-files and links, handles the old Codex skill-directory link, and restores removed
-links if `chezmoi apply` fails.
-
-If a verified legacy source has uncommitted content that differs from this
-repository, the migration stops. Preserve or merge that content first. Only
-after review, allow replacement with:
-
-```sh
-"$(chezmoi source-path)/scripts/migrate-from-stow.sh" \
-  --accept-legacy-changes
-```
-
-The option never permits overwriting a differing non-Stow file.
+`~/.bashrc`, `~/.zshrc`, and `~/.zshenv` are managed directly. They source the
+shared environment layer, which keeps its historical `~/.env_stow.sh` name.
 
 ## Daily Use
 
@@ -100,7 +53,6 @@ From the source directory:
 
 ```sh
 ./tests/test_source_state.sh
-./tests/test_migrate_from_stow.sh
 python3 -m unittest tests.test_publish_hooks
 ```
 

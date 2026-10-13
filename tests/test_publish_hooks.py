@@ -12,7 +12,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS = {
-    "codex": REPO_ROOT / "dot_codex/hooks/executable_confirm-publish.sh",
+    "codex": REPO_ROOT / "private_dot_codex/hooks/executable_confirm-publish.sh",
 }
 
 
