@@ -15,7 +15,8 @@
     "mattpocock-skills@mattpocock": true,
     "working-on-llvm@jinpei-skills": true,
     "writing-python-docstrings-and-comments@jinpei-skills": true,
-    "amdgpu-isa-builder@jinpei-skills": false
+    "amdgpu-isa-builder@jinpei-skills": false,
+    "document-skills@anthropic-agent-skills": true
   },
   "extraKnownMarketplaces": {
     "i-have-adhd": {
@@ -40,6 +41,12 @@
       "source": {
         "source": "github",
         "repo": "lijinpei-amd/skills"
+      }
+    },
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/skills"
       }
     }
   },
