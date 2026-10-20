@@ -10,7 +10,7 @@
 # untouched -- except the jinpei-skills marketplace and its plugins, which are
 # enforced so a new machine gets them too (see JINPEI_TABLES).
 #
-# A .tmpl so model_catalog_json can follow the home directory.
+# Rendered by chezmoi before running as a modify_ script.
 # Beware when adding shell here: Go template delimiters in a script body -- easy
 # to introduce with awk or jq braces -- are evaluated silently rather than
 # erroring, mangling the script. If that comes up, switch to inert delimiters
@@ -96,10 +96,9 @@ state=$(awk '
 ')
 
 cat <<'MANAGED'
-model_provider = "amd_llm"
+model_provider = "amd_llm_dvue"
 personality = "pragmatic"
-model = "dvue-aoai-006-gpt-6.1-sol"
-model_catalog_json = "{{ .chezmoi.homeDir }}/.codex/amd-pinned-models.json"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "xhigh"
 service_tier = "fast"
 
@@ -118,11 +117,31 @@ auth_elicitation = true
 hooks = true
 memories = true
 
+[model_providers.amd_llm_dvue]
+name = "OpenAI-dvue"
+base_url = "http://127.0.0.1:30101/OpenAI-dvue/"
+wire_api = "responses"
+supports_websockets = false
+
+[model_providers.amd_llm_dvue.env_http_headers]
+"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
+
 [model_providers.amd_llm]
-name = "amd_llm"
-base_url = "https://llm-api.amd.com/OpenAI/"
+name = "OpenAI"
+base_url = "http://127.0.0.1:30101/OpenAI/"
+wire_api = "responses"
+supports_websockets = false
 
 [model_providers.amd_llm.env_http_headers]
+"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
+
+[model_providers.amd_llm_pdue]
+name = "OpenAI-pdue"
+base_url = "http://127.0.0.1:30101/OpenAI-pdue/"
+wire_api = "responses"
+supports_websockets = false
+
+[model_providers.amd_llm_pdue.env_http_headers]
 "Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
 
 [tui]

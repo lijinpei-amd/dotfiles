@@ -21,6 +21,7 @@ cm() {
 mkdir -p "$test_home/.codex"
 cat > "$test_home/.codex/config.toml" <<'TOML'
 model = "stale-model"
+model_catalog_json = "/stale/catalog.json"
 
 [projects."/seeded/project"]
 trust_level = "trusted"
@@ -81,10 +82,31 @@ grep -Fq "base_dir = $test_home/development" \
     "$test_home/.config/ccache/ccache.conf"
 grep -Fq "_development_root = \"$test_home/development\"" \
     "$test_home/.config/gdb/gdbinit"
-grep -Fq "model_catalog_json = \"$test_home/.codex/amd-pinned-models.json\"" \
-    "$test_home/.codex/config.toml"
-# Codex refuses to load its config when model_catalog_json names a missing file.
-test -f "$test_home/.codex/amd-pinned-models.json"
+python3 - "$test_home/.codex/config.toml" <<'PY'
+import sys, tomllib
+
+with open(sys.argv[1], "rb") as config_file:
+    config = tomllib.load(config_file)
+assert config["model"] == "gpt-6.1-sol", config["model"]
+assert config["model_provider"] == "amd_llm_dvue", config["model_provider"]
+assert "model_catalog_json" not in config
+routes = {
+    "amd_llm": "OpenAI",
+    "amd_llm_dvue": "OpenAI-dvue",
+    "amd_llm_pdue": "OpenAI-pdue",
+}
+assert set(config["model_providers"]) == set(routes)
+for provider_id, route in routes.items():
+    provider = config["model_providers"][provider_id]
+    assert provider["name"] == route, provider
+    assert provider["base_url"] == f"http://127.0.0.1:30101/{route}/", provider
+    assert provider["wire_api"] == "responses", provider
+    assert provider["supports_websockets"] is False, provider
+    assert provider["env_http_headers"] == {
+        "Ocp-Apim-Subscription-Key": "LLM_GATEWAY_KEY",
+    }, provider
+PY
+test ! -e "$test_home/.codex/amd-pinned-models.json"
 if grep -Fq 'stale-model' "$test_home/.codex/config.toml"; then
     echo "error: Codex config kept a stale managed key" >&2
     exit 1
