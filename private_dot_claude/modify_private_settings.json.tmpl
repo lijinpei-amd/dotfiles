@@ -1,5 +1,16 @@
+#!/bin/bash
+# Enforce managed settings while preserving Claude's runtime model preferences.
+{{ $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
+set -euo pipefail
+
+current=$(cat)
+[ -n "$current" ] || current='{}'
+
+managed=$(cat <<'JSON'
 {
   "env": {
+    "ANTHROPIC_BASE_URL": {{ printf "%s/Anthropic" $llmProxyBaseUrl | toJson }},
+    "ANTHROPIC_API_KEY": "dummy",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "CLAUDE_CODE_SHELL": "/bin/bash"
   },
@@ -56,3 +67,8 @@
   "skipDangerousModePermissionPrompt": true,
   "preferredNotifChannel": "iterm2"
 }
+JSON
+)
+
+printf '%s\n' "$(printf '%s' "$current" |
+    jq --argjson managed "$managed" '. as $current | . + $managed | .env = (($current.env // {} | del(.ANTHROPIC_CUSTOM_HEADERS)) + $managed.env)')"

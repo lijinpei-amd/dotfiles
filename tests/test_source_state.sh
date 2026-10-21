@@ -10,7 +10,7 @@ test_home="$tmp/home"
 mkdir -p "$test_home"
 
 cm() {
-    HOME="$test_home" "$chezmoi_bin" \
+    LLM_GATEWAY_KEY="" HOME="$test_home" "$chezmoi_bin" \
         --source "$repo_root" \
         --destination "$test_home" \
         "$@"
@@ -44,6 +44,21 @@ enabled = false
 enabled = true
 TOML
 
+# Claude records model preferences at runtime; preserve them and unrelated env.
+mkdir -p "$test_home/.claude"
+cat > "$test_home/.claude/settings.json" <<'JSON'
+{
+  "env": {
+    "KEEP_ME": "seeded-env",
+    "ANTHROPIC_BASE_URL": "https://stale.invalid",
+    "ANTHROPIC_CUSTOM_HEADERS": "stale-header"
+  },
+  "modelSettings": {
+    "seeded-model": {"effortLevel": "high"}
+  }
+}
+JSON
+
 # pi rewrites settings.json the same way: it records the last-used model and
 # changelog version itself, and writes no trailing newline.
 mkdir -p "$test_home/.pi/agent"
@@ -65,6 +80,18 @@ test -x "$test_home/.codex/hooks/confirm-publish.sh"
 test -x "$test_home/.tmux/name-session.sh"
 
 jq empty "$test_home/.claude/settings.json"
+python3 - "$test_home/.claude/settings.json" <<'PY'
+import json, sys
+
+settings = json.load(open(sys.argv[1]))
+assert settings["env"]["ANTHROPIC_BASE_URL"] == (
+    "http://127.0.0.1:30101/Anthropic"
+)
+assert settings["env"]["ANTHROPIC_API_KEY"] == "dummy"
+assert "ANTHROPIC_CUSTOM_HEADERS" not in settings["env"]
+assert settings["env"]["KEEP_ME"] == "seeded-env"
+assert settings["modelSettings"] == {"seeded-model": {"effortLevel": "high"}}
+PY
 jq empty "$test_home/.codex/hooks.json"
 python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' \
     "$test_home/.codex/config.toml"
@@ -102,9 +129,7 @@ for provider_id, route in routes.items():
     assert provider["base_url"] == f"http://127.0.0.1:30101/{route}/", provider
     assert provider["wire_api"] == "responses", provider
     assert provider["supports_websockets"] is False, provider
-    assert provider["env_http_headers"] == {
-        "Ocp-Apim-Subscription-Key": "LLM_GATEWAY_KEY",
-    }, provider
+    assert "env_http_headers" not in provider, provider
 PY
 test ! -e "$test_home/.codex/amd-pinned-models.json"
 if grep -Fq 'stale-model' "$test_home/.codex/config.toml"; then
@@ -147,14 +172,45 @@ if jq -e '.packages | index("stale-package")' "$pi_settings" >/dev/null; then
 fi
 test "$(tail -c1 "$pi_settings")" = "}"
 
-# models.json needs the machine-local piProxyBaseUrl; without it the file is
+# models.json needs the machine-local llmProxyBaseUrl; without it the file is
 # left alone rather than failing the whole apply.
 test ! -e "$test_home/.pi/agent/models.json"
-pi_models=$(cm --override-data '{"piProxyBaseUrl": "http://proxy.test:1"}' \
-    cat "$test_home/.pi/agent/models.json")
-printf '%s' "$pi_models" | jq empty
-printf '%s' "$pi_models" | grep -Fq '"baseUrl": "http://proxy.test:1/OpenAI"'
-printf '%s' "$pi_models" | grep -Fq '"baseUrl": "http://proxy.test:1/Anthropic"'
+for proxy_url in http://proxy.test:1 http://proxy.test:1/; do
+    proxy_data=$(jq -cn --arg url "$proxy_url" '{llmProxyBaseUrl: $url}')
+    cm --override-data "$proxy_data" cat "$test_home/.claude/settings.json" \
+        > "$tmp/claude-settings.json"
+    python3 - "$tmp/claude-settings.json" <<'PY'
+import json, sys
+
+settings = json.load(open(sys.argv[1]))
+assert settings["env"]["ANTHROPIC_BASE_URL"] == (
+    "http://proxy.test:1/Anthropic"
+)
+PY
+    cm --override-data "$proxy_data" cat "$test_home/.codex/config.toml" \
+        > "$tmp/codex-config.toml"
+    python3 - "$tmp/codex-config.toml" <<'PY'
+import sys, tomllib
+
+providers = tomllib.load(open(sys.argv[1], "rb"))["model_providers"]
+assert {key: value["base_url"] for key, value in providers.items()} == {
+    "amd_llm": "http://proxy.test:1/OpenAI/",
+    "amd_llm_dvue": "http://proxy.test:1/OpenAI-dvue/",
+    "amd_llm_pdue": "http://proxy.test:1/OpenAI-pdue/",
+}, providers
+PY
+    cm --override-data "$proxy_data" cat "$test_home/.pi/agent/models.json" \
+        > "$tmp/pi-models.json"
+    python3 - "$tmp/pi-models.json" <<'PY'
+import json, sys
+
+providers = json.load(open(sys.argv[1]))["providers"]
+assert {key: value["baseUrl"] for key, value in providers.items()} == {
+    "amd-openai": "http://proxy.test:1/OpenAI",
+    "amd-anthropic": "http://proxy.test:1/Anthropic",
+}, providers
+PY
+done
 
 for script in "$repo_root"/.chezmoiscripts/*.tmpl; do
     cm execute-template < "$script" | bash -n

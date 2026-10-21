@@ -3,6 +3,6 @@ tests
 tests/**
 {{- /* pi's models.json points at the machine's LLM gateway proxy, which only
        that machine's chezmoi.toml knows; see README. */}}
-{{ if not (hasKey . "piProxyBaseUrl") -}}
+{{ if not (hasKey . "llmProxyBaseUrl") -}}
 .pi/agent/models.json
 {{ end -}}

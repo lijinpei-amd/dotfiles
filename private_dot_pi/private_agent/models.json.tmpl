@@ -1,7 +1,8 @@
+{{ $llmProxyBaseUrl := .llmProxyBaseUrl | trimSuffix "/" -}}
 {
   "providers": {
     "amd-openai": {
-      "baseUrl": "{{ .piProxyBaseUrl }}/OpenAI",
+      "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI",
       "api": "openai-completions",
       "apiKey": "local-proxy",
       "models": [
@@ -516,7 +517,7 @@
       ]
     },
     "amd-anthropic": {
-      "baseUrl": "{{ .piProxyBaseUrl }}/Anthropic",
+      "baseUrl": "{{ $llmProxyBaseUrl }}/Anthropic",
       "api": "anthropic-messages",
       "apiKey": "local-proxy",
       "models": [

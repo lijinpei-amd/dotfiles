@@ -16,7 +16,7 @@
 # erroring, mangling the script. If that comes up, switch to inert delimiters
 # with chezmoi's left/right-delimiter template directive on line 1. (Spelling
 # that directive out here, even in a comment, makes chezmoi eat the line.)
-{{ $codexProxyBaseUrl := index . "codexProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
+{{ $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
 set -euo pipefail
 
 # The jinpei-skills tables are enforced but left wherever Codex has put them:
@@ -120,30 +120,21 @@ memories = true
 
 [model_providers.amd_llm_dvue]
 name = "OpenAI-dvue"
-base_url = "{{ $codexProxyBaseUrl }}/OpenAI-dvue/"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI-dvue/"
 wire_api = "responses"
 supports_websockets = false
-
-[model_providers.amd_llm_dvue.env_http_headers]
-"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
 
 [model_providers.amd_llm]
 name = "OpenAI"
-base_url = "{{ $codexProxyBaseUrl }}/OpenAI/"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI/"
 wire_api = "responses"
 supports_websockets = false
-
-[model_providers.amd_llm.env_http_headers]
-"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
 
 [model_providers.amd_llm_pdue]
 name = "OpenAI-pdue"
-base_url = "{{ $codexProxyBaseUrl }}/OpenAI-pdue/"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI-pdue/"
 wire_api = "responses"
 supports_websockets = false
-
-[model_providers.amd_llm_pdue.env_http_headers]
-"Ocp-Apim-Subscription-Key" = "LLM_GATEWAY_KEY"
 
 [tui]
 # Notify when a turn finishes or Codex needs approval or plan-mode input.

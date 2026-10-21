@@ -10,7 +10,7 @@ The repository manages:
 - ccache and GDB configuration for LLVM worktrees;
 - Claude Code, Codex, and pi settings, and the Codex publish guard.
 
-The ccache, GDB, Git, Codex, and pi files are templates. Absolute paths are
+The ccache, GDB, Git, Claude Code, Codex, and pi files are templates. Absolute paths are
 rendered from the current machine's home directory.
 
 ## Per-Machine Settings
@@ -20,24 +20,32 @@ Values that differ between machines live in that machine's
 
 ```toml
 [data]
-    codexProxyBaseUrl = "http://<host>:<port>"
-    piProxyBaseUrl = "http://<host>:<port>"
+    llmProxyBaseUrl = "http://<host>:<port>"
 ```
 
 | Key | Used by |
 | --- | --- |
-| `codexProxyBaseUrl` | Codex's three provider URLs: the LLM gateway proxy, before the route. Defaults to `http://127.0.0.1:30101` when unset or empty. A trailing slash is optional. |
-| `piProxyBaseUrl` | pi's `models.json`: the LLM gateway proxy, before `/OpenAI` or `/Anthropic`. Unset, `models.json` is left unmanaged. |
+| `llmProxyBaseUrl` | Claude Code's `settings.json`, Codex's three provider URLs, and pi's `models.json`: the LLM gateway proxy, before the API route. A trailing slash is optional. |
 
-Codex appends routes to `codexProxyBaseUrl`, with providers
+When `llmProxyBaseUrl` is unset or empty, Claude Code and Codex default to
+`http://127.0.0.1:30101`. When the key is unset, pi's `models.json` is left
+unmanaged. On existing machines, replace `codexProxyBaseUrl` and
+`piProxyBaseUrl` with `llmProxyBaseUrl`.
+
+Codex appends routes to `llmProxyBaseUrl`, with providers
 `amd_llm` (`/OpenAI/`), `amd_llm_dvue` (`/OpenAI-dvue/`, the default), and
 `amd_llm_pdue` (`/OpenAI-pdue/`). The pinned routes select deployment instances
 while Codex uses canonical model names and its bundled model metadata.
 Configure these Nginx routes at the chosen proxy before using Codex on a fresh
-machine. After changing the machine's `codexProxyBaseUrl`, apply the config:
+machine. Nginx injects the gateway subscription key for all three Codex routes.
+Pi appends `/OpenAI` and `/Anthropic` to the same base URL.
+Claude Code appends `/Anthropic`; Nginx injects the gateway subscription key.
+Its settings contain a dummy API key for the client and need no gateway key
+when rendered by chezmoi.
+After changing the machine's `llmProxyBaseUrl`, apply all three configs:
 
 ```sh
-chezmoi apply ~/.codex/config.toml
+chezmoi apply ~/.claude/settings.json ~/.codex/config.toml ~/.pi/agent/models.json
 ```
 
 ## Fresh Machine
