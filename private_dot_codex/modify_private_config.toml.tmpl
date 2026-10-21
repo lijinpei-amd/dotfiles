@@ -16,6 +16,7 @@
 # erroring, mangling the script. If that comes up, switch to inert delimiters
 # with chezmoi's left/right-delimiter template directive on line 1. (Spelling
 # that directive out here, even in a comment, makes chezmoi eat the line.)
+{{ $codexProxyBaseUrl := index . "codexProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
 set -euo pipefail
 
 # The jinpei-skills tables are enforced but left wherever Codex has put them:
@@ -119,7 +120,7 @@ memories = true
 
 [model_providers.amd_llm_dvue]
 name = "OpenAI-dvue"
-base_url = "http://127.0.0.1:30101/OpenAI-dvue/"
+base_url = "{{ $codexProxyBaseUrl }}/OpenAI-dvue/"
 wire_api = "responses"
 supports_websockets = false
 
@@ -128,7 +129,7 @@ supports_websockets = false
 
 [model_providers.amd_llm]
 name = "OpenAI"
-base_url = "http://127.0.0.1:30101/OpenAI/"
+base_url = "{{ $codexProxyBaseUrl }}/OpenAI/"
 wire_api = "responses"
 supports_websockets = false
 
@@ -137,7 +138,7 @@ supports_websockets = false
 
 [model_providers.amd_llm_pdue]
 name = "OpenAI-pdue"
-base_url = "http://127.0.0.1:30101/OpenAI-pdue/"
+base_url = "{{ $codexProxyBaseUrl }}/OpenAI-pdue/"
 wire_api = "responses"
 supports_websockets = false
 

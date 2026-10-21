@@ -20,18 +20,25 @@ Values that differ between machines live in that machine's
 
 ```toml
 [data]
+    codexProxyBaseUrl = "http://<host>:<port>"
     piProxyBaseUrl = "http://<host>:<port>"
 ```
 
 | Key | Used by |
 | --- | --- |
+| `codexProxyBaseUrl` | Codex's three provider URLs: the LLM gateway proxy, before the route. Defaults to `http://127.0.0.1:30101` when unset or empty. A trailing slash is optional. |
 | `piProxyBaseUrl` | pi's `models.json`: the LLM gateway proxy, before `/OpenAI` or `/Anthropic`. Unset, `models.json` is left unmanaged. |
 
-Codex uses the local Nginx proxy at `http://127.0.0.1:30101`, with providers
+Codex appends routes to `codexProxyBaseUrl`, with providers
 `amd_llm` (`/OpenAI/`), `amd_llm_dvue` (`/OpenAI-dvue/`, the default), and
 `amd_llm_pdue` (`/OpenAI-pdue/`). The pinned routes select deployment instances
 while Codex uses canonical model names and its bundled model metadata.
-Configure these Nginx routes before using Codex on a fresh machine.
+Configure these Nginx routes at the chosen proxy before using Codex on a fresh
+machine. After changing the machine's `codexProxyBaseUrl`, apply the config:
+
+```sh
+chezmoi apply ~/.codex/config.toml
+```
 
 ## Fresh Machine
 
