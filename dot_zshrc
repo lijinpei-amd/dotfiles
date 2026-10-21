@@ -1,4 +1,6 @@
 # Interactive zsh configuration (managed by chezmoi).
+[ -r "$HOME/.env_stow.sh" ] && source "$HOME/.env_stow.sh"
+
 unsetopt BEEP
 
 # Load Oh My Zsh (installed by setup_dev_environment.sh). Set the theme first so

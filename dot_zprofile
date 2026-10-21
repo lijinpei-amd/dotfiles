@@ -1,0 +1,3 @@
+# Login zsh environment (managed by chezmoi).
+[ -r "$HOME/.env_login_stow.sh" ] && source "$HOME/.env_login_stow.sh"
+true

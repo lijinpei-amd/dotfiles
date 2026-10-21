@@ -1,6 +1,8 @@
 README.md
 tests
 tests/**
+.env.sh
+.env_login.sh
 {{- /* pi's models.json points at the machine's LLM gateway proxy, which only
        that machine's chezmoi.toml knows; see README. */}}
 {{ if not (hasKey . "llmProxyBaseUrl") -}}

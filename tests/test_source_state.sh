@@ -69,9 +69,29 @@ printf '%s' '{
 }' > "$test_home/.pi/agent/settings.json"
 
 # Scripts call out to tools such as codex that the test does not provide.
+retired_shell_targets=(
+    "$test_home/.bash_login"
+    "$test_home/.bashenv"
+    "$test_home/.profile"
+    "$test_home/.zlogin"
+    "$test_home/.zshenv"
+)
+for target in "${retired_shell_targets[@]}"; do
+    printf '%s\n' '# retired shell startup file' > "$target"
+done
+
 cm --force --no-tty apply --exclude=scripts
 cm verify --exclude=scripts
 test -z "$(cm status --exclude=scripts)"
+
+for target in "${retired_shell_targets[@]}"; do
+    test ! -e "$target"
+    printf '%s\n' '# recreated shell startup file' > "$target"
+done
+cm --force --no-tty apply --exclude=scripts "${retired_shell_targets[@]}"
+for target in "${retired_shell_targets[@]}"; do
+    test ! -e "$target"
+done
 
 test ! -e "$test_home/README.md"
 test ! -e "$test_home/tests"
@@ -96,13 +116,18 @@ jq empty "$test_home/.codex/hooks.json"
 python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' \
     "$test_home/.codex/config.toml"
 
-bash -n \
+for bash_startup in \
+    "$test_home/.bash_profile" \
     "$test_home/.bashrc" \
-    "$test_home/.bashenv" \
     "$test_home/.env_stow.sh" \
+    "$test_home/.env_login_stow.sh" \
     "$test_home/.codex/hooks/confirm-publish.sh" \
-    "$test_home/.tmux/name-session.sh"
-zsh -n "$test_home/.zshenv" "$test_home/.zshrc"
+    "$test_home/.tmux/name-session.sh"; do
+    bash -n "$bash_startup"
+done
+for zsh_startup in "$test_home/.zprofile" "$test_home/.zshrc"; do
+    zsh -n "$zsh_startup"
+done
 
 grep -Fq "excludesfile = $test_home/.gitignore" "$test_home/.gitconfig"
 grep -Fq "base_dir = $test_home/development" \

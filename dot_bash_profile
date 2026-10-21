@@ -1,0 +1,8 @@
+# Login bash environment (managed by chezmoi).
+[ -r "$HOME/.env_login_stow.sh" ] && source "$HOME/.env_login_stow.sh"
+
+# Load interactive settings after login settings, matching zsh's startup order.
+if [[ $- == *i* ]]; then
+    [ -r "$HOME/.bashrc" ] && source "$HOME/.bashrc"
+fi
+true

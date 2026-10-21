@@ -62,8 +62,34 @@ The repository is public, so HTTPS also works:
 chezmoi init --apply https://github.com/lijinpei-amd/dotfiles.git
 ```
 
-`~/.bashrc`, `~/.zshrc`, and `~/.zshenv` are managed directly. They source the
-shared environment layer, which keeps its historical `~/.env_stow.sh` name.
+Bash's `~/.bash_profile` and `~/.bashrc`, plus zsh's `~/.zprofile` and
+`~/.zshrc`, are managed directly. Bash login setup
+lives in `~/.bash_profile`, which replaces `~/.profile`.
+
+Removal markers keep retired startup files absent on every `chezmoi apply`:
+
+| Target kept absent | Removal marker |
+| --- | --- |
+| `~/.bashenv` | `remove_dot_bashenv` |
+| `~/.zshenv` | `remove_dot_zshenv` |
+| `~/.zlogin` | `remove_dot_zlogin` |
+| `~/.profile` | `remove_dot_profile` |
+| `~/.bash_login` | `remove_dot_bash_login` |
+
+| Shell startup | Managed script | Optional private script |
+| --- | --- | --- |
+| Interactive only | `~/.env_stow.sh` | `~/.env.sh` |
+| Login only | `~/.env_login_stow.sh` | `~/.env_login.sh` |
+
+Each managed script sources its corresponding private script after its own
+settings. Shell startup files source only the managed scripts.
+
+Interactive scripts load through `~/.zshrc` or `~/.bashrc`. Login scripts load
+through `~/.zprofile` or `~/.bash_profile`. Interactive login shells load the
+login pair before the interactive pair in both shells; noninteractive login
+shells load only the login pair. Noninteractive,
+non-login shells inherit exported environment variables without sourcing either
+pair. `BASH_ENV` is not set.
 
 ## Daily Use
 
@@ -88,9 +114,11 @@ From the source directory:
 
 ```sh
 ./tests/test_source_state.sh
+python3 -m unittest tests.test_shell_startup
 python3 -m unittest tests.test_publish_hooks
 ```
 
-Only intentional configuration belongs here. Private `~/.env.sh`, Claude and
-Codex credentials, shell histories, caches, sessions, project state, generated
-files, backups, and `~/.claude.json` are not managed.
+Only intentional configuration belongs here. Private `~/.env.sh` and
+`~/.env_login.sh`, Claude and Codex credentials, shell histories, caches,
+sessions, project state, generated files, backups, and `~/.claude.json` are not
+managed.
