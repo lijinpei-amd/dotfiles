@@ -2,8 +2,9 @@
 {
   "providers": {
     "amd-openai": {
-      "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI",
+      "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI/",
       "api": "openai-completions",
+      "discoverModels": true,
       "apiKey": "local-proxy",
       "models": [
         {
@@ -516,9 +517,22 @@
         }
       ]
     },
+    "amd-openai-dvue": {
+      "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-dvue/",
+      "api": "openai-completions",
+      "discoverModels": true,
+      "apiKey": "local-proxy"
+    },
+    "amd-openai-pdue": {
+      "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-pdue/",
+      "api": "openai-completions",
+      "discoverModels": true,
+      "apiKey": "local-proxy"
+    },
     "amd-anthropic": {
-      "baseUrl": "{{ $llmProxyBaseUrl }}/Anthropic",
+      "baseUrl": "{{ $llmProxyBaseUrl }}/Anthropic/",
       "api": "anthropic-messages",
+      "discoverModels": true,
       "apiKey": "local-proxy",
       "models": [
         {

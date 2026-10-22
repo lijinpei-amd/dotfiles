@@ -21,12 +21,27 @@ seed='{
 # jinpei-skills arrives as a package, which pi clones on first use; "skills" is
 # emptied so an older local-clone path cannot load the same skill twice.
 managed='{
-  "enabledModels": ["amd-anthropic/*", "amd-openai/*"],
+  "enabledModels": [
+    "amd-anthropic/*",
+    "amd-openai/*",
+    "amd-openai-dvue/*",
+    "amd-openai-pdue/*"
+  ],
   "packages": [
     "https://github.com/ayghri/i-have-adhd",
     "git:github.com/DietrichGebert/ponytail",
     "npm:pi-subagents",
-    "git:github.com/lijinpei-amd/skills"
+    "git:github.com/lijinpei-amd/skills",
+    {
+      "source": "git:github.com/lijinpei/pi-extensions@feat/models-discovery-metadata",
+      "extensions": [
+        "packages/pi-models-discovery/index.ts",
+        "packages/pi-extensions-i18n/index.ts"
+      ],
+      "skills": ["packages/pi-models-discovery/SKILL.md"],
+      "prompts": [],
+      "themes": []
+    }
   ],
   "theme": "dark",
   "skills": []

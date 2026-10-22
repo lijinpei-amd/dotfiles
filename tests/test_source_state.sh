@@ -231,8 +231,10 @@ import json, sys
 
 providers = json.load(open(sys.argv[1]))["providers"]
 assert {key: value["baseUrl"] for key, value in providers.items()} == {
-    "amd-openai": "http://proxy.test:1/OpenAI",
-    "amd-anthropic": "http://proxy.test:1/Anthropic",
+    "amd-openai": "http://proxy.test:1/OpenAI/",
+    "amd-openai-dvue": "http://proxy.test:1/OpenAI-dvue/",
+    "amd-openai-pdue": "http://proxy.test:1/OpenAI-pdue/",
+    "amd-anthropic": "http://proxy.test:1/Anthropic/",
 }, providers
 PY
 done
