@@ -21,11 +21,18 @@ Values that differ between machines live in that machine's
 ```toml
 [data]
     llmProxyBaseUrl = "http://<host>:<port>"
+    gitName = "<name>"
+    gitEmail = "<address>"
+
+[data.gitIncludeIf]
+    "hasconfig:remote.*.url:git@<ssh-host-alias>:**/*" = "<path to a gitconfig>"
 ```
 
 | Key | Used by |
 | --- | --- |
 | `llmProxyBaseUrl` | Claude Code's `settings.json`, Codex's three provider URLs, and pi's `models.json`: the LLM gateway proxy, before the API route. A trailing slash is optional. |
+| `gitName`, `gitEmail` | `~/.gitconfig`'s `user.name` and `user.email`. There is no default: each is written only when set and non-empty. |
+| `gitIncludeIf` | `~/.gitconfig`'s `[includeIf]` sections: each key is a condition, each value the file to include when it holds. They come last, so an included `user.name` or `user.email` overrides `gitName` or `gitEmail`. Unset, none are written. |
 
 When `llmProxyBaseUrl` is unset or empty, Claude Code and Codex default to
 `http://127.0.0.1:30101`. When the key is unset, pi's `models.json` is left

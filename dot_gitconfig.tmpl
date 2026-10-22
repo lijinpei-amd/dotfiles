@@ -1,6 +1,16 @@
+{{/* The identity is per machine with no default: an unset key is left out, so
+     git asks for it, or an included file below supplies it. */ -}}
+{{ $name := index . "gitName" -}}
+{{ $email := index . "gitEmail" -}}
+{{ if or $name $email -}}
 [user]
-	name = Li Jinpei
-	email = jinpli@amd.com
+{{- with $name }}
+	name = {{ . }}
+{{- end }}
+{{- with $email }}
+	email = {{ . }}
+{{- end }}
+{{ end -}}
 [core]
 	excludesfile = {{ .chezmoi.homeDir }}/.gitignore
 [init]
@@ -15,4 +25,11 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+{{ end -}}
+{{/* Per-machine conditional includes, such as a work identity for repos whose
+     remote goes through a dedicated SSH host alias. Kept last so that what an
+     included file sets overrides [user] above. */ -}}
+{{ range $condition, $path := index . "gitIncludeIf" | default dict -}}
+[includeIf "{{ $condition }}"]
+	path = {{ $path }}
 {{ end -}}

@@ -130,6 +130,28 @@ for zsh_startup in "$test_home/.zprofile" "$test_home/.zshrc"; do
 done
 
 grep -Fq "excludesfile = $test_home/.gitignore" "$test_home/.gitconfig"
+if git config --file "$test_home/.gitconfig" --get-regexp '^(user|includeif)\.' \
+    >/dev/null || grep -Fxq '[user]' "$test_home/.gitconfig"; then
+    echo "error: gitconfig has an identity or includeIf with none configured" >&2
+    exit 1
+fi
+# The Git identity is per machine. gitIncludeIf sections come after [user], so a
+# matching include can still override gitName and gitEmail.
+git_config="$tmp/gitconfig"
+cm --override-data '{"gitName": "Home Name", "gitEmail": "home@example.test",
+    "gitIncludeIf":
+    {"hasconfig:remote.*.url:git@work-alias:**/*": "/work/gitconfig"}}' \
+    cat "$test_home/.gitconfig" > "$git_config"
+test "$(git config --file "$git_config" user.name)" = "Home Name"
+test "$(git config --file "$git_config" user.email)" = home@example.test
+test "$(git config --file "$git_config" \
+    'includeIf.hasconfig:remote.*.url:git@work-alias:**/*.path')" = /work/gitconfig
+test "$(grep '^\[' "$git_config" | tail -n1)" = \
+    '[includeIf "hasconfig:remote.*.url:git@work-alias:**/*"]'
+cm --override-data '{"gitEmail": "home@example.test"}' \
+    cat "$test_home/.gitconfig" > "$git_config"
+test "$(git config --file "$git_config" --get-regexp '^user\.')" = \
+    'user.email home@example.test'
 grep -Fq "base_dir = $test_home/development" \
     "$test_home/.config/ccache/ccache.conf"
 grep -Fq "_development_root = \"$test_home/development\"" \
