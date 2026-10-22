@@ -1,0 +1,54 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+       .chezmoi.stdin is the current ~/.pi/agent/settings.json; the output
+       replaces it. pi rewrites this file at runtime -- defaultProvider and
+       defaultModel whenever the model is switched, lastChangelogVersion on
+       startup, anything changed through /settings -- so the managed keys below
+       are enforced, the default model is only seeded where none is set yet, and
+       every other key is passed through untouched. A template rather than a
+       script so it needs no shell or jq, which Windows lacks.
+
+       The output matches pi's own JSON.stringify(settings, null, 2): two-space
+       indent, no trailing newline. Keys come out sorted. */ -}}
+{{- $seed := dict "defaultProvider" "amd-anthropic" "defaultModel" "Claude-Opus-5" -}}
+{{- /* jinpei-skills arrives as a package, which pi clones on first use;
+       "skills" is emptied so an older local-clone path cannot load the same
+       skill twice. */ -}}
+{{- $managed := `{
+  "enabledModels": [
+    "amd-anthropic/*",
+    "amd-openai/*",
+    "amd-openai-dvue/*",
+    "amd-openai-pdue/*"
+  ],
+  "packages": [
+    "https://github.com/ayghri/i-have-adhd",
+    "git:github.com/DietrichGebert/ponytail",
+    "npm:pi-subagents",
+    "git:github.com/lijinpei-amd/skills",
+    {
+      "source": "git:github.com/lijinpei/pi-extensions@feat/models-discovery-metadata",
+      "extensions": [
+        "packages/pi-models-discovery/index.ts",
+        "packages/pi-extensions-i18n/index.ts"
+      ],
+      "skills": ["packages/pi-models-discovery/SKILL.md"],
+      "prompts": [],
+      "themes": []
+    }
+  ],
+  "theme": "dark",
+  "skills": []
+}` | fromJson -}}
+{{- $current := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $current = fromJson .chezmoi.stdin -}}
+{{- end -}}
+{{- $settings := $seed -}}
+{{- range $key, $value := $current -}}
+{{-   $_ := set $settings $key $value -}}
+{{- end -}}
+{{- range $key, $value := $managed -}}
+{{-   $_ := set $settings $key $value -}}
+{{- end -}}
+{{ toPrettyJson $settings | trimSuffix "\n" -}}

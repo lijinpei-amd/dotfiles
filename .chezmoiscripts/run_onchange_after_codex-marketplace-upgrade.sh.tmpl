@@ -4,7 +4,7 @@
 # config.toml alone does not create one; `upgrade` does. Re-runs whenever the
 # Codex config template changes. Renders empty until codex is on PATH, so a
 # machine where chezmoi runs before Codex is installed gets it on a later apply.
-# config template: {{ include "private_dot_codex/modify_private_config.toml.tmpl" | sha256sum }}
+# config template: {{ include "private_dot_codex/modify_private_config.toml" | sha256sum }}
 set -euo pipefail
 codex plugin marketplace upgrade jinpei-skills
 

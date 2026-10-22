@@ -1,6 +1,39 @@
 README.md
 tests
 tests/**
+{{- /* The Codex publish guard is a bash hook, which Codex on Windows cannot
+       run. */}}
+{{ if eq .chezmoi.os "windows" -}}
+.codex/hooks.json
+.codex/hooks
+.codex/hooks/**
+{{ end -}}
+{{- /* On Windows the bash, zsh, and tmux setup, and gdb, belong to MSYS2,
+       which keeps its own home: a config with msys2 set applies those there,
+       along with git, ccache, and Neovim, and the Windows profile gets none of
+       them. The Windows profile takes git as is, and Neovim and ccache under
+       AppData, where native Windows builds look; MSYS2's shells point those
+       builds at ~/.config instead. See README. Excludes win over ignores. */}}
+{{ $msys2Only := list
+     ".bash_profile" ".bashrc" ".zprofile" ".zshrc"
+     ".env_stow.sh" ".env_login_stow.sh" ".inputrc"
+     ".oh-my-zsh" ".oh-my-zsh/**"
+     ".tmux.conf" ".tmux" ".tmux/**"
+     ".bash_login" ".bashenv" ".profile" ".zlogin" ".zshenv"
+     ".config" ".config/**" -}}
+{{ if index . "msys2" -}}
+**
+{{ range concat $msys2Only (list ".gitconfig" ".gitignore" ".local" ".local/share" ".local/share/nvim-data" ".local/share/nvim-data/**") -}}
+!{{ . }}
+{{ end -}}
+{{ else if eq .chezmoi.os "windows" -}}
+{{ range $msys2Only -}}
+{{ . }}
+{{ end -}}
+{{ else -}}
+AppData
+AppData/**
+{{ end -}}
 .env.sh
 .env_login.sh
 {{- /* pi's models.json points at the machine's LLM gateway proxy, which only

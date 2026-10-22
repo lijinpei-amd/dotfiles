@@ -1,0 +1,3 @@
+# chezmoi copies these files verbatim, and shells, tmux, and Neovim on every
+# platform expect LF; keep Git for Windows' autocrlf from converting them.
+* text=auto eol=lf

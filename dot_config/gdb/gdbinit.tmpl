@@ -23,7 +23,7 @@ python
 import glob, json, os
 import gdb
 
-_development_root = "{{ .chezmoi.homeDir }}/development"
+_development_root = "{{ .chezmoi.destDir }}/development"
 _central_llvm = os.path.join(_development_root, "repos", "llvm-project")
 _workspace_root = os.path.join(_development_root, "workspace")
 

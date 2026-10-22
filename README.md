@@ -11,7 +11,7 @@ The repository manages:
 - Claude Code, Codex, and pi settings, and the Codex publish guard.
 
 The ccache, GDB, Git, Claude Code, Codex, and pi files are templates. Absolute paths are
-rendered from the current machine's home directory.
+rendered from the home directory chezmoi applies to.
 
 ## Per-Machine Settings
 
@@ -23,6 +23,7 @@ Values that differ between machines live in that machine's
     llmProxyBaseUrl = "http://<host>:<port>"
     gitName = "<name>"
     gitEmail = "<address>"
+    gitProxy = "http://<host>:<port>"
 
 [data.gitIncludeIf]
     "hasconfig:remote.*.url:git@<ssh-host-alias>:**/*" = "<path to a gitconfig>"
@@ -32,7 +33,9 @@ Values that differ between machines live in that machine's
 | --- | --- |
 | `llmProxyBaseUrl` | Claude Code's `settings.json`, Codex's three provider URLs, and pi's `models.json`: the LLM gateway proxy, before the API route. A trailing slash is optional. |
 | `gitName`, `gitEmail` | `~/.gitconfig`'s `user.name` and `user.email`. There is no default: each is written only when set and non-empty. |
+| `gitProxy` | `~/.gitconfig`'s `http.proxy`, such as `http://127.0.0.1:7890`, which git uses for both HTTP and HTTPS remotes. Unset or empty, none is written. |
 | `gitIncludeIf` | `~/.gitconfig`'s `[includeIf]` sections: each key is a condition, each value the file to include when it holds. They come last, so an included `user.name` or `user.email` overrides `gitName` or `gitEmail`. Unset, none are written. |
+| `msys2` | When true, only what MSYS2 uses is managed: the bash, zsh, and tmux setup, Git, ccache, Neovim, and GDB; see [Windows](#windows). Other per-machine keys, such as the Git identity, go in the same config. |
 
 When `llmProxyBaseUrl` is unset or empty, Claude Code and Codex default to
 `http://127.0.0.1:30101`. When the key is unset, pi's `models.json` is left
@@ -54,6 +57,57 @@ After changing the machine's `llmProxyBaseUrl`, apply all three configs:
 ```sh
 chezmoi apply ~/.claude/settings.json ~/.codex/config.toml ~/.pi/agent/models.json
 ```
+
+## Windows
+
+The Claude Code, Codex, and pi settings are `modify_` templates rather than
+scripts, so they need no shell. The scripts in `.chezmoiscripts` are bash, which
+Windows cannot run by itself; point chezmoi at Git Bash in
+`~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+[interpreters.sh]
+    command = "C:/Program Files/Git/bin/bash.exe"
+```
+
+Git Bash's `$HOME` is the Windows profile, the same home chezmoi applies to.
+
+The Windows profile also gets Git, and Neovim and ccache under
+`%LOCALAPPDATA%`, where their native Windows builds look:
+`AppData/Local/nvim/init.lua`, vim-plug under `AppData/Local/nvim-data`, and
+`AppData/Local/ccache/ccache.conf`, rendered from the same sources as their
+`~/.config` counterparts.
+
+MSYS2 keeps its own home, `/home/<user>` under the MSYS2 root. The bash, zsh,
+and tmux setup and GDB go there rather than to the Windows profile, along with
+their own Git, ccache, and Neovim. Apply them through a second config,
+`~/.config/chezmoi/msys2.toml`:
+
+```toml
+destDir = "C:/msys64/home/<user>"
+
+[data]
+    msys2 = true
+    gitName = "<name>"
+    gitEmail = "<address>"
+```
+
+```sh
+chezmoi -c ~/.config/chezmoi/msys2.toml diff
+chezmoi -c ~/.config/chezmoi/msys2.toml apply
+```
+
+Everything else, scripts included, is ignored under that config; the main
+config leaves those files out of the Windows profile. MSYS2's Neovim and ccache
+are native Windows builds too, so MSYS2 login shells set `XDG_CONFIG_HOME`,
+`XDG_DATA_HOME`, and `CCACHE_CONFIGPATH` to point them at this home: config in
+`~/.config`, and vim-plug under `~/.local/share/nvim-data`. ccache keeps its one
+cache under `%LOCALAPPDATA%`.
+
+The Git template adds the Git LFS filter when chezmoi finds `git-lfs` on its
+own `PATH`, which on Windows is the Windows one. Install Git LFS for MSYS2's Git
+as well, such as `mingw-w64-ucrt-x86_64-git-lfs`, or LFS repositories fail
+there.
 
 ## Fresh Machine
 

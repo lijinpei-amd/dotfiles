@@ -1,0 +1,3 @@
+{{- /* ccache on Windows reads %LOCALAPPDATA%\ccache\ccache.conf; same
+       file as ~/.config/ccache/ccache.conf. */ -}}
+{{ includeTemplate "dot_config/ccache/ccache.conf.tmpl" . -}}

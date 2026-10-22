@@ -1,0 +1,182 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+     .chezmoi.stdin is the current ~/.codex/config.toml; the output replaces it.
+     Codex rewrites parts of this file at runtime -- [projects] trust levels as
+     directories are trusted, [hooks.state] hashes whenever hooks.json changes,
+     the [tui.model_availability_nux] counters, and the [marketplaces] and
+     [plugins] entries for the bundled marketplace it unpacks into .codex/.tmp,
+     and the [notice] records of model migrations it has already announced.
+     The Codex desktop app on Windows adds [windows], [desktop], the node_repl
+     and vscode MCP servers, its own [features] flags, and the top-level
+     web_search, model_verbosity, and notify, whose paths point into that
+     machine's app install.
+     Managing the whole file would leave it permanently dirty in `chezmoi diff`,
+     so the settings below are enforced and those section families and keys are
+     passed through untouched -- except the jinpei-skills marketplace and its
+     plugins, which are enforced so a new machine gets them too (see
+     $jinpeiTables). A template rather than a script so it needs no shell,
+     which Windows lacks.
+
+     The jinpei-skills tables are enforced but left wherever Codex has put them:
+     Codex inserts its own [marketplaces] and [plugins] tables beside them, so
+     moving them back on each apply would leave the file permanently dirty. Each
+     is rewritten in place, or appended if missing; any other jinpei-skills
+     plugin table is dropped. Codex reads a Git marketplace only from its
+     snapshot under .codex/.tmp, which
+     .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh creates.
+
+     amdgpu-isa-builder is off between rebuilds of the amd-gpu-isa skill: an
+     enabled plugin costs context in every session. `codex plugin add
+     amdgpu-isa-builder@jinpei-skills` turns it on for a rebuild; the next
+     chezmoi apply turns it off again. */ -}}
+{{- $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
+{{- $jinpeiTables := list
+      (list `[marketplaces.jinpei-skills]` `source_type = "git"` `source = "https://github.com/lijinpei-amd/skills.git"`)
+      (list `[plugins."working-on-llvm@jinpei-skills"]` `enabled = true`)
+      (list `[plugins."writing-python-docstrings-and-comments@jinpei-skills"]` `enabled = true`)
+      (list `[plugins."amdgpu-isa-builder@jinpei-skills"]` `enabled = false`) -}}
+{{- $bodies := dict -}}
+{{- range $jinpeiTables -}}
+{{-   $_ := set $bodies (first .) (rest .) -}}
+{{- end -}}
+{{- /* Sections Codex owns: the table itself ("[hooks.state]") and any subtable
+       ("[projects.\"/path\"]"); everything until the next header is kept.
+       Lines go to $state; a rewritten table owes a blank separator before the
+       next nonblank line, and $blank tracks whether the last line was blank so
+       tables stay one blank line apart.
+
+       Top-level keys Codex owns are collected into $topLevel instead, since
+       TOML needs them ahead of every table; a multi-line array value runs to
+       its closing "]" line. Codex's own [features] flags go to $features, to
+       join the managed [features] table, as TOML allows only one; the managed
+       flags win. */ -}}
+{{- $state := list -}}
+{{- $topLevel := list -}}
+{{- $features := list -}}
+{{- $inFeatures := false -}}
+{{- $preamble := true -}}
+{{- $inValue := false -}}
+{{- $keep := false -}}
+{{- $owed := false -}}
+{{- $blank := false -}}
+{{- $written := dict -}}
+{{- range $line := splitList "\n" (.chezmoi.stdin | replace "\r\n" "\n" | trimSuffix "\n") -}}
+{{-   $emit := list -}}
+{{-   if $inValue -}}
+{{-     $topLevel = append $topLevel $line -}}
+{{-     $inValue = not (regexMatch `^[[:space:]]*\]` $line) -}}
+{{-     continue -}}
+{{-   end -}}
+{{-   if and $preamble (regexMatch `^(web_search|model_verbosity|notify)[[:space:]]*=` $line) -}}
+{{-     $topLevel = append $topLevel $line -}}
+{{-     $inValue = regexMatch `=[[:space:]]*\[[^\]]*$` $line -}}
+{{-     continue -}}
+{{-   end -}}
+{{-   if regexMatch `^[[:space:]]*\[` $line -}}
+{{-     $preamble = false -}}
+{{-     $inFeatures = eq (trim $line) "[features]" -}}
+{{-     $keep = regexMatch `^\[(hooks\.state|projects|tui\.model_availability_nux|marketplaces|plugins|notice|windows|desktop|mcp_servers\.(node_repl|vscode))(\]|\.)` $line -}}
+{{-     if hasKey $bodies $line -}}
+{{-       $emit = prepend (get $bodies $line) $line -}}
+{{-       $_ := set $written $line true -}}
+{{-       $keep = false -}}
+{{-     else if regexMatch `^\[(marketplaces\.jinpei-skills|plugins\."[^"]*@jinpei-skills")\]` $line -}}
+{{-       $keep = false -}}
+{{-     end -}}
+{{-   else if and $inFeatures (regexMatch `^[[:space:]]*[^[:space:]#]` $line) (not (regexMatch `^[[:space:]]*(auth_elicitation|hooks|memories)[[:space:]]*=` $line)) -}}
+{{-     $features = append $features $line -}}
+{{-   end -}}
+{{-   if $keep -}}
+{{-     $emit = list $line -}}
+{{-   end -}}
+{{-   range $emit -}}
+{{-     if and $owed (ne . "") -}}
+{{-       $state = append $state "" -}}
+{{-     end -}}
+{{-     $owed = false -}}
+{{-     $state = append $state . -}}
+{{-     $blank = eq . "" -}}
+{{-   end -}}
+{{-   if hasKey $written $line -}}
+{{-     $owed = true -}}
+{{-   end -}}
+{{- end -}}
+{{- range $jinpeiTables -}}
+{{-   if not (hasKey $written (first .)) -}}
+{{-     if and $state (not $blank) -}}
+{{-       $state = append $state "" -}}
+{{-     end -}}
+{{-     $state = concat $state . -}}
+{{-     $blank = false -}}
+{{-   end -}}
+{{- end -}}
+{{- $state = regexReplaceAll "\n+$" (join "\n" $state) "" -}}
+model_provider = "amd_llm_dvue"
+personality = "pragmatic"
+model = "gpt-6.1-sol"
+model_reasoning_effort = "xhigh"
+service_tier = "fast"
+
+# --yolo (--dangerously-bypass-approvals-and-sandbox) by default: no approval
+# prompts, no sandbox around model-run commands. Codex has the same authority
+# over this machine as the shell it is launched from. Drop back per session with
+# `codex -a on-request -s workspace-write`.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+{{- with $topLevel }}
+
+# Written by Codex and preserved verbatim on each apply.
+{{ join "\n" . }}
+{{- end }}
+
+# Lifecycle hooks (~/.codex/hooks.json) are Stable and default-on in current
+# Codex, but enable explicitly so the publish guard still loads if a pinned or
+# older build leaves the feature off.
+[features]
+auth_elicitation = true
+hooks = true
+memories = true
+{{- with $features }}
+{{ join "\n" . }}
+{{- end }}
+
+[model_providers.amd_llm_dvue]
+name = "OpenAI-dvue"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI-dvue/"
+wire_api = "responses"
+supports_websockets = false
+
+[model_providers.amd_llm]
+name = "OpenAI"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI/"
+wire_api = "responses"
+supports_websockets = false
+
+[model_providers.amd_llm_pdue]
+name = "OpenAI-pdue"
+base_url = "{{ $llmProxyBaseUrl }}/OpenAI-pdue/"
+wire_api = "responses"
+supports_websockets = false
+
+[tui]
+# Notify when a turn finishes or Codex needs approval or plan-mode input.
+notifications = ["agent-turn-complete", "approval-requested", "plan-mode-prompt"]
+notification_condition = "unfocused"
+notification_method = "auto"
+screen_reader_detection_done = true
+status_line = ["model-with-reasoning", "current-dir", "thread-name", "model", "reasoning", "run-state", "context-remaining", "context-window-size", "total-input-tokens", "total-output-tokens", "thread-credits", "estimated-thread-cost", "task-progress"]
+status_line_use_colors = true
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+[memories]
+generate_memories = true
+use_memories = true
+
+# Everything below is written by Codex and preserved verbatim on each apply.
+# Hook trust is keyed by the absolute hooks.json path, so it is deliberately not
+# carried between machines -- Codex re-prompts. See openai/codex#6646 and #21615.
+{{ if regexMatch `\S` $state }}
+{{ $state }}
+{{ end -}}

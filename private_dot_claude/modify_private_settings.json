@@ -1,18 +1,16 @@
-#!/bin/bash
-# Enforce managed settings while preserving Claude's runtime model preferences.
-{{ $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
-set -euo pipefail
-
-current=$(cat)
-[ -n "$current" ] || current='{}'
-
-managed=$(cat <<'JSON'
-{
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+       .chezmoi.stdin is the current ~/.claude/settings.json; the output
+       replaces it. Enforce managed settings while preserving Claude's runtime
+       model preferences: managed top-level keys replace the current ones, env is
+       merged, and every other key is passed through. A template rather than a
+       script so it needs no shell or jq, which Windows lacks. Keys come out
+       sorted. */ -}}
+{{- $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
+{{- $managed := `{
   "env": {
-    "ANTHROPIC_BASE_URL": {{ printf "%s/Anthropic" $llmProxyBaseUrl | toJson }},
     "ANTHROPIC_API_KEY": "dummy",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "CLAUDE_CODE_SHELL": "/bin/bash"
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },
   "permissions": {
     "defaultMode": "bypassPermissions"
@@ -67,9 +65,23 @@ managed=$(cat <<'JSON'
   "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "preferredNotifChannel": "iterm2"
-}
-JSON
-)
-
-printf '%s\n' "$(printf '%s' "$current" |
-    jq --argjson managed "$managed" '. as $current | . + $managed | .env = (($current.env // {} | del(.ANTHROPIC_CUSTOM_HEADERS)) + $managed.env)')"
+}` | fromJson -}}
+{{- $_ := set $managed.env "ANTHROPIC_BASE_URL" (printf "%s/Anthropic" $llmProxyBaseUrl) -}}
+{{- /* Native Windows Claude Code finds Git Bash itself; /bin/bash is not a
+       Windows path. */ -}}
+{{- if ne .chezmoi.os "windows" -}}
+{{-   $_ := set $managed.env "CLAUDE_CODE_SHELL" "/bin/bash" -}}
+{{- end -}}
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = fromJson .chezmoi.stdin -}}
+{{- end -}}
+{{- $env := omit (get $settings "env" | default dict) "ANTHROPIC_CUSTOM_HEADERS" -}}
+{{- range $key, $value := $managed -}}
+{{-   $_ := set $settings $key $value -}}
+{{- end -}}
+{{- range $key, $value := $managed.env -}}
+{{-   $_ := set $env $key $value -}}
+{{- end -}}
+{{- $_ := set $settings "env" $env -}}
+{{ toPrettyJson $settings -}}

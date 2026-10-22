@@ -11,8 +11,13 @@
 	email = {{ . }}
 {{- end }}
 {{ end -}}
+{{/* git uses http.proxy for https:// URLs as well; there is no https.proxy. */ -}}
+{{ with index . "gitProxy" -}}
+[http]
+	proxy = {{ . }}
+{{ end -}}
 [core]
-	excludesfile = {{ .chezmoi.homeDir }}/.gitignore
+	excludesfile = {{ .chezmoi.destDir }}/.gitignore
 [init]
 	defaultBranch = main
 {{ if lookPath "git-lfs" -}}

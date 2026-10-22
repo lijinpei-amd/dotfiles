@@ -28,7 +28,17 @@
     stripComponents = 1
     checksum.sha256 = "aacd5d5da02099b98f1e9b7a5c7789f2c5b7c78f1f14a8b8f69fb08c0d2f8284"
 
-[".local/share/nvim/site/autoload/plug.vim"]
+{{/* Into Neovim's stdpath("data"). On Windows Neovim is a native program
+     whose data directory ends in -data: under %LOCALAPPDATA% by default, and
+     under XDG_DATA_HOME in MSYS2, whose shells set it; see
+     dot_env_login_stow.sh. */ -}}
+{{ $nvimData := ".local/share/nvim" -}}
+{{ if index . "msys2" -}}
+{{   $nvimData = ".local/share/nvim-data" -}}
+{{ else if eq .chezmoi.os "windows" -}}
+{{   $nvimData = "AppData/Local/nvim-data" -}}
+{{ end -}}
+["{{ $nvimData }}/site/autoload/plug.vim"]
     type = "file"
     url = "https://raw.githubusercontent.com/junegunn/vim-plug/88e31471818e9a29a8a20a0ee61360cfd7bdc1cd/plug.vim"
     checksum.sha256 = "7e2b20cd909da9c456498684c98f03c63829170f01e34595dd8e1818a217d37c"
