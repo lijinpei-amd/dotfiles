@@ -27,7 +27,7 @@
     "npm:pi-subagents",
     "git:github.com/lijinpei-amd/skills",
     {
-      "source": "git:github.com/lijinpei/pi-extensions@feat/models-discovery-metadata",
+      "source": "git:github.com/lijinpei/pi-extensions@feat/models-discovery-catalog-and-tests",
       "extensions": [
         "packages/pi-models-discovery/index.ts",
         "packages/pi-extensions-i18n/index.ts"

@@ -290,6 +290,9 @@ test "$(jq -r .defaultProvider "$pi_settings")" = amd-anthropic
 test "$(jq -r .lastChangelogVersion "$pi_settings")" = 9.9.9
 jq -e '.packages | index("git:github.com/lijinpei-amd/skills")' "$pi_settings" >/dev/null
 test "$(jq -c .skills "$pi_settings")" = "[]"
+jq -e '.packages | any(type == "object" and
+    .source == "git:github.com/lijinpei/pi-extensions@feat/models-discovery-catalog-and-tests")' \
+    "$pi_settings" >/dev/null
 if jq -e '.packages | index("stale-package")' "$pi_settings" >/dev/null; then
     echo "error: pi settings kept a stale managed key" >&2
     exit 1
@@ -335,6 +338,22 @@ assert {key: value["baseUrl"] for key, value in providers.items()} == {
     "amd-openai-pdue": "http://proxy.test:1/OpenAI-pdue/",
     "amd-anthropic": "http://proxy.test:1/Anthropic/",
 }, providers
+for provider_id, provider in providers.items():
+    assert provider["discoverModels"] is True, provider
+    assert provider["metadataUrl"] == "https://models.dev/api.json", provider
+    assert provider["apiKey"] == "local-proxy", provider
+    if provider_id.startswith("amd-openai"):
+        assert provider["metadataProvider"] == "openai", provider
+        assert provider["modelApi"] == {
+            "codex": "openai-responses",
+            r"^gpt-(5\.6|6)": "openai-responses",
+        }, provider
+anthropic = providers["amd-anthropic"]
+assert anthropic["modelsUrl"] == "http://proxy.test:1/OpenAI/models", anthropic
+assert anthropic["modelIdRegex"] == "^Claude-", anthropic
+assert anthropic["metadataProvider"] == "anthropic", anthropic
+assert len(providers["amd-openai"]["models"]) == 38
+assert len(anthropic["models"]) == 12
 PY
 done
 

@@ -5,6 +5,12 @@
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI/",
       "api": "openai-completions",
       "discoverModels": true,
+      "metadataUrl": "https://models.dev/api.json",
+      "metadataProvider": "openai",
+      "modelApi": {
+        "codex": "openai-responses",
+        "^gpt-(5\\.6|6)": "openai-responses"
+      },
       "apiKey": "local-proxy",
       "models": [
         {
@@ -521,18 +527,34 @@
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-dvue/",
       "api": "openai-completions",
       "discoverModels": true,
+      "metadataUrl": "https://models.dev/api.json",
+      "metadataProvider": "openai",
+      "modelApi": {
+        "codex": "openai-responses",
+        "^gpt-(5\\.6|6)": "openai-responses"
+      },
       "apiKey": "local-proxy"
     },
     "amd-openai-pdue": {
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-pdue/",
       "api": "openai-completions",
       "discoverModels": true,
+      "metadataUrl": "https://models.dev/api.json",
+      "metadataProvider": "openai",
+      "modelApi": {
+        "codex": "openai-responses",
+        "^gpt-(5\\.6|6)": "openai-responses"
+      },
       "apiKey": "local-proxy"
     },
     "amd-anthropic": {
       "baseUrl": "{{ $llmProxyBaseUrl }}/Anthropic/",
       "api": "anthropic-messages",
       "discoverModels": true,
+      "modelsUrl": "{{ $llmProxyBaseUrl }}/OpenAI/models",
+      "modelIdRegex": "^Claude-",
+      "metadataUrl": "https://models.dev/api.json",
+      "metadataProvider": "anthropic",
       "apiKey": "local-proxy",
       "models": [
         {
