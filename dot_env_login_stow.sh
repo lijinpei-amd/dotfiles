@@ -22,21 +22,7 @@ export PATH
 # MSYS2's Neovim and ccache are native Windows programs, which look for their
 # config under %LOCALAPPDATA% rather than in this home. Point them here; MSYS2
 # converts these paths to Windows form when it starts a native program.
-# Their UCRT64 builds, with gdb and git-lfs, live in /ucrt64/bin, which only the
-# UCRT64 shell puts on PATH. Elsewhere put it right after /usr/bin, so MSYS2's
-# own tools still come first but these beat Windows copies on an inherited PATH.
 if [ -n "${MSYSTEM:-}" ]; then
-    case ":$PATH:" in
-        *:/ucrt64/bin:*) ;;
-        *:/usr/bin:*)
-            PATH=":$PATH:"
-            PATH="${PATH/:\/usr\/bin:/:/usr/bin:/ucrt64/bin:}"
-            PATH="${PATH#:}"
-            PATH="${PATH%:}"
-            ;;
-        *) PATH="$PATH:/ucrt64/bin" ;;
-    esac
-    export PATH
     export XDG_CONFIG_HOME="$HOME/.config"
     export XDG_DATA_HOME="$HOME/.local/share"
     export CCACHE_CONFIGPATH="$XDG_CONFIG_HOME/ccache/ccache.conf"

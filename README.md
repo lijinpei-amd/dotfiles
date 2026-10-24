@@ -105,9 +105,9 @@ are native Windows builds too, so MSYS2 login shells set `XDG_CONFIG_HOME`,
 cache under `%LOCALAPPDATA%`.
 
 The Git template adds the Git LFS filter when chezmoi finds `git-lfs` on its
-own `PATH`, which on Windows is the Windows one. Install Git LFS for MSYS2's Git
-as well, such as `mingw-w64-ucrt-x86_64-git-lfs`, or LFS repositories fail
-there.
+own `PATH`, which on Windows is the Windows one. MSYS2's Git needs `git-lfs` on
+its `PATH` as well, or LFS repositories fail there: such as
+`mingw-w64-ucrt-x86_64-git-lfs`, which the UCRT64 shell puts on `PATH`.
 
 ## Fresh Machine
 
