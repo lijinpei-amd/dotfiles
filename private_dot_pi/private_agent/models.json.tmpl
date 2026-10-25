@@ -2,6 +2,7 @@
 {
   "providers": {
     "amd-openai": {
+      "modelIdRegex": "^gpt-(5\\.6|6(?:\\.[0-9]+)?)(?:-|$)",
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI/",
       "api": "openai-completions",
       "discoverModels": true,
@@ -14,6 +15,7 @@
       "metadataProvider": "openai"
     },
     "amd-openai-dvue": {
+      "modelIdRegex": "^gpt-(5\\.6|6(?:\\.[0-9]+)?)(?:-|$)",
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-dvue/",
       "api": "openai-completions",
       "discoverModels": true,
@@ -26,6 +28,7 @@
       }
     },
     "amd-openai-pdue": {
+      "modelIdRegex": "^gpt-(5\\.6|6(?:\\.[0-9]+)?)(?:-|$)",
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI-pdue/",
       "api": "openai-completions",
       "discoverModels": true,
@@ -42,7 +45,7 @@
       "api": "anthropic-messages",
       "discoverModels": true,
       "modelsUrl": "{{ $llmProxyBaseUrl }}/OpenAI/models",
-      "modelIdRegex": "^Claude-",
+      "modelIdRegex": "^Claude-(Opus|Sonnet|Haiku)-5(?:\\.5)?(?:-|$)",
       "metadataUrl": "https://models.dev/api.json",
       "metadataProvider": "anthropic",
       "apiKey": "dummy"

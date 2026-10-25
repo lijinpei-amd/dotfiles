@@ -343,6 +343,7 @@ for provider_id, provider in providers.items():
     assert provider["metadataUrl"] == "https://models.dev/api.json", provider
     assert provider["apiKey"] == "local-proxy", provider
     if provider_id.startswith("amd-openai"):
+        assert provider["modelIdRegex"] == r"^gpt-(5\.6|6(?:\.[0-9]+)?)(?:-|$)", provider
         assert provider["metadataProvider"] == "openai", provider
         assert provider["modelApi"] == {
             "codex": "openai-responses",
@@ -350,7 +351,7 @@ for provider_id, provider in providers.items():
         }, provider
 anthropic = providers["amd-anthropic"]
 assert anthropic["modelsUrl"] == "http://proxy.test:1/OpenAI/models", anthropic
-assert anthropic["modelIdRegex"] == "^Claude-", anthropic
+assert anthropic["modelIdRegex"] == r"^Claude-(Opus|Sonnet|Haiku)-5(?:\.5)?(?:-|$)", anthropic
 assert anthropic["metadataProvider"] == "anthropic", anthropic
 assert len(providers["amd-openai"]["models"]) == 38
 assert len(anthropic["models"]) == 12
