@@ -21,6 +21,7 @@ Values that differ between machines live in that machine's
 ```toml
 [data]
     llmProxyBaseUrl = "http://<host>:<port>"
+    deepseekApiKey = ""
     gitName = "<name>"
     gitEmail = "<address>"
     gitProxy = "http://<host>:<port>"
@@ -32,15 +33,16 @@ Values that differ between machines live in that machine's
 | Key | Used by |
 | --- | --- |
 | `llmProxyBaseUrl` | Claude Code's `settings.json`, Codex's three provider URLs, and pi's `models.json`: the LLM gateway proxy, before the API route. A trailing slash is optional. |
+| `deepseekApiKey` | Optional official DeepSeek API key for pi. A nonempty value adds the `deepseek` provider and includes its models in pi's scope; omitted, empty, or whitespace-only values add nothing. |
 | `gitName`, `gitEmail` | `~/.gitconfig`'s `user.name` and `user.email`. There is no default: each is written only when set and non-empty. |
 | `gitProxy` | `~/.gitconfig`'s `http.proxy`, such as `http://127.0.0.1:7890`, which git uses for both HTTP and HTTPS remotes. Unset or empty, none is written. |
 | `gitIncludeIf` | `~/.gitconfig`'s `[includeIf]` sections: each key is a condition, each value the file to include when it holds. They come last, so an included `user.name` or `user.email` overrides `gitName` or `gitEmail`. Unset, none are written. |
 | `msys2` | When true, only what MSYS2 uses is managed: the bash, zsh, and tmux setup, Git, ccache, Neovim, and GDB; see [Windows](#windows). Other per-machine keys, such as the Git identity, go in the same config. |
 
 When `llmProxyBaseUrl` is unset or empty, Claude Code and Codex default to
-`http://127.0.0.1:30101`. When the key is unset, pi's `models.json` is left
-unmanaged. On existing machines, replace `codexProxyBaseUrl` and
-`piProxyBaseUrl` with `llmProxyBaseUrl`.
+`http://127.0.0.1:30101`. Pi's `models.json` is left unmanaged when neither a
+nonempty `llmProxyBaseUrl` nor `deepseekApiKey` is configured. On existing
+machines, replace `codexProxyBaseUrl` and `piProxyBaseUrl` with `llmProxyBaseUrl`.
 
 Codex appends routes to `llmProxyBaseUrl`, with providers
 `amd_llm` (`/OpenAI/`), `amd_llm_dvue` (`/OpenAI-dvue/`, the default), and
@@ -57,6 +59,19 @@ After changing the machine's `llmProxyBaseUrl`, apply all three configs:
 ```sh
 chezmoi apply ~/.claude/settings.json ~/.codex/config.toml ~/.pi/agent/models.json
 ```
+
+To enable official DeepSeek, set `deepseekApiKey` only in the machine-local
+chezmoi config, never in this repository. Pi uses `https://api.deepseek.com`
+and its built-in DeepSeek model catalog; the gateway URL and default model
+stay unchanged. DeepSeek also works without an LLM gateway. Apply both pi files,
+then restart pi to rebuild its model scope:
+
+```sh
+chmod 600 ~/.config/chezmoi/chezmoi.toml
+chezmoi apply ~/.pi/agent/models.json ~/.pi/agent/settings.json
+```
+
+The rendered `models.json` is owner-only because it can contain this key.
 
 ## Windows
 
@@ -175,6 +190,7 @@ From the source directory:
 
 ```sh
 ./tests/test_source_state.sh
+python3 -m unittest tests.test_pi_providers
 python3 -m unittest tests.test_shell_startup
 python3 -m unittest tests.test_publish_hooks
 ```

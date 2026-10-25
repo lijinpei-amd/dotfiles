@@ -36,8 +36,7 @@ AppData/**
 {{ end -}}
 .env.sh
 .env_login.sh
-{{- /* pi's models.json points at the machine's LLM gateway proxy, which only
-       that machine's chezmoi.toml knows; see README. */}}
-{{ if not (hasKey . "llmProxyBaseUrl") -}}
+{{- /* pi's models.json needs a machine-local gateway or DeepSeek API key. */}}
+{{ if not (or (index . "llmProxyBaseUrl" | default "" | trim) (index . "deepseekApiKey" | default "" | trim)) -}}
 .pi/agent/models.json
 {{ end -}}

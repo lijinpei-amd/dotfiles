@@ -1,6 +1,8 @@
-{{ $llmProxyBaseUrl := .llmProxyBaseUrl | trimSuffix "/" -}}
+{{ $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "" | trim | trimSuffix "/" -}}
+{{ $deepseekApiKey := index . "deepseekApiKey" | default "" | trim -}}
 {
   "providers": {
+{{- if $llmProxyBaseUrl }}
     "amd-openai": {
       "modelIdRegex": "^gpt-(5\\.6|6(?:\\.[0-9]+)?)(?:-|$)",
       "baseUrl": "{{ $llmProxyBaseUrl }}/OpenAI/",
@@ -50,5 +52,14 @@
       "metadataProvider": "anthropic",
       "apiKey": "dummy"
     }
+{{- end }}
+{{- if $deepseekApiKey }}
+{{- if $llmProxyBaseUrl }},{{ end }}
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com",
+      "api": "openai-completions",
+      "apiKey": {{ $deepseekApiKey | toJson }}
+    }
+{{- end }}
   }
 }

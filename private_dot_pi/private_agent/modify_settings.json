@@ -117,6 +117,13 @@
   "theme": "dark",
   "skills": []
 }` | fromJson -}}
+{{- if index . "deepseekApiKey" | default "" | trim -}}
+{{-   $enabledModels := list "deepseek/*" -}}
+{{-   if index . "llmProxyBaseUrl" | default "" | trim -}}
+{{-     $enabledModels = append (get $managed "enabledModels") "deepseek/*" -}}
+{{-   end -}}
+{{-   $_ := set $managed "enabledModels" $enabledModels -}}
+{{- end -}}
 {{- $current := dict -}}
 {{- if trim .chezmoi.stdin -}}
 {{-   $current = fromJson .chezmoi.stdin -}}
