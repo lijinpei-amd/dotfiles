@@ -1,13 +1,6 @@
 README.md
 tests
 tests/**
-{{- /* The Codex publish guard is a bash hook, which Codex on Windows cannot
-       run. */}}
-{{ if eq .chezmoi.os "windows" -}}
-.codex/hooks.json
-.codex/hooks
-.codex/hooks/**
-{{ end -}}
 {{- /* On Windows the bash, zsh, and tmux setup, and gdb, belong to MSYS2,
        which keeps its own home: a config with msys2 set applies those there,
        along with git, ccache, and Neovim, and the Windows profile gets none of

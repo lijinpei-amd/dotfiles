@@ -8,7 +8,7 @@ The repository manages:
 - Git identity, defaults, and global ignore rules;
 - Readline, tmux, and Neovim configuration;
 - ccache and GDB configuration for LLVM worktrees;
-- Claude Code, Codex, and pi settings, and the Codex publish guard.
+- Claude Code, Codex, and pi settings.
 
 The ccache, GDB, Git, Claude Code, Codex, and pi files are templates. Absolute paths are
 rendered from the home directory chezmoi applies to.
@@ -192,7 +192,6 @@ From the source directory:
 ./tests/test_source_state.sh
 python3 -m unittest tests.test_pi_providers
 python3 -m unittest tests.test_shell_startup
-python3 -m unittest tests.test_publish_hooks
 ```
 
 Only intentional configuration belongs here. Private `~/.env.sh` and

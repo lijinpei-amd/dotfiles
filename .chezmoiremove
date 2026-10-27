@@ -1,3 +1,5 @@
 .zshrc_stow
 .zshenv_stow
 .bashrc_stow
+.codex/hooks.json
+.codex/hooks

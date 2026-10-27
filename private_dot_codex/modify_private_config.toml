@@ -129,9 +129,9 @@ sandbox_mode = "danger-full-access"
 {{ join "\n" . }}
 {{- end }}
 
-# Lifecycle hooks (~/.codex/hooks.json) are Stable and default-on in current
-# Codex, but enable explicitly so the publish guard still loads if a pinned or
-# older build leaves the feature off.
+# Lifecycle hooks are Stable and default-on in current Codex, but enable
+# explicitly so plugin hooks still load if a pinned or older build leaves the
+# feature off.
 [features]
 auth_elicitation = true
 hooks = true

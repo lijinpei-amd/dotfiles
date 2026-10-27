@@ -125,6 +125,11 @@ for target in "${retired_shell_targets[@]}"; do
     printf '%s\n' '# retired shell startup file' > "$target"
 done
 
+# The retired Codex publish guard.
+mkdir -p "$test_home/.codex/hooks"
+printf '%s\n' '{}' > "$test_home/.codex/hooks.json"
+printf '%s\n' '#!/bin/bash' > "$test_home/.codex/hooks/confirm-publish.sh"
+
 cm --force --no-tty apply --exclude=scripts
 cm verify --exclude=scripts
 test -z "$(cm status --exclude=scripts)"
@@ -152,16 +157,8 @@ done
 test ! -e "$test_home/README.md"
 test ! -e "$test_home/tests"
 
-# The Codex publish guard is a bash hook, left out where Codex runs natively on
-# Windows.
-if $windows; then
-    test ! -e "$test_home/.codex/hooks.json"
-    test ! -e "$test_home/.codex/hooks"
-else
-    test -x "$test_home/.codex/hooks/confirm-publish.sh"
-    jq empty "$test_home/.codex/hooks.json"
-    bash -n "$test_home/.codex/hooks/confirm-publish.sh"
-fi
+test ! -e "$test_home/.codex/hooks.json"
+test ! -e "$test_home/.codex/hooks"
 test -x "$test_home/.tmux/name-session.sh"
 
 jq empty "$test_home/.claude/settings.json"
