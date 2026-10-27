@@ -6,7 +6,7 @@
 # machine where chezmoi runs before Codex is installed gets it on a later apply.
 # config template: {{ include "private_dot_codex/modify_private_config.toml" | sha256sum }}
 set -euo pipefail
-codex plugin marketplace upgrade jinpei-skills
+codex plugin marketplace upgrade
 
 # upgrade installs the configured plugins only when the snapshot changes, so add
 # any still missing from the cache. `plugin add` also sets enabled = true; put
@@ -14,10 +14,10 @@ codex plugin marketplace upgrade jinpei-skills
 config="$HOME/.codex/config.toml"
 cp -p -- "$config" "$config.chezmoi-orig"
 trap 'mv -f -- "$config.chezmoi-orig" "$config"' EXIT
-sed -n 's/^\[plugins\."\([^"]*\)@jinpei-skills"\]$/\1/p' "$config" |
-while IFS= read -r plugin; do
-	if [ ! -d "$HOME/.codex/plugins/cache/jinpei-skills/$plugin" ]; then
-		codex plugin add "$plugin@jinpei-skills"
+sed -n 's/^\[plugins\."\([^"@]*\)@\(jinpei-skills\|superpowers-dev\|i-have-adhd\)"\]$/\1 \2/p' "$config" |
+while read -r plugin marketplace; do
+	if [ ! -d "$HOME/.codex/plugins/cache/$marketplace/$plugin" ]; then
+		codex plugin add "$plugin@$marketplace"
 	fi
 done
 {{ end -}}
