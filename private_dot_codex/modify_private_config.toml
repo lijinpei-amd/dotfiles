@@ -33,6 +33,7 @@
 {{- $pluginTables := list
       (list `[marketplaces.jinpei-skills]` `source_type = "git"` `source = "https://github.com/lijinpei-amd/skills.git"`)
       (list `[plugins."working-on-llvm@jinpei-skills"]` `enabled = true`)
+      (list `[plugins."locking-gpus@jinpei-skills"]` `enabled = true`)
       (list `[plugins."writing-python-docstrings-and-comments@jinpei-skills"]` `enabled = true`)
       (list `[plugins."amdgpu-isa-builder@jinpei-skills"]` `enabled = false`)
       (list `[marketplaces.superpowers-dev]` `source_type = "git"` `source = "https://github.com/obra/superpowers.git"`)
@@ -119,7 +120,7 @@ model_provider = "amd_llm_dvue"
 personality = "pragmatic"
 model = "gpt-6.1-sol"
 model_reasoning_effort = "xhigh"
-service_tier = "fast"
+service_tier = "default"
 
 # --yolo (--dangerously-bypass-approvals-and-sandbox) by default: no approval
 # prompts, no sandbox around model-run commands. Codex has the same authority

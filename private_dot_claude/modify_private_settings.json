@@ -24,6 +24,7 @@
     "superpowers@superpowers-dev": true,
     "mattpocock-skills@mattpocock": true,
     "working-on-llvm@jinpei-skills": true,
+    "locking-gpus@jinpei-skills": true,
     "writing-python-docstrings-and-comments@jinpei-skills": true,
     "amdgpu-isa-builder@jinpei-skills": false,
     "document-skills@anthropic-agent-skills": true
