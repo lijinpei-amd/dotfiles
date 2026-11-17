@@ -10,6 +10,10 @@ skillsCli: skills@1.9.0
 # .chezmoiscripts/run_onchange_after_skills-install.sh.tmpl installs them with
 # the skills CLI. Every other user-level skill shows in chezmoi status as one
 # to delete, and apply removes it: see run_before_skills-prune.sh.tmpl.
+#
+# A source with `submodules: false` is installed without its git submodules,
+# which the skills CLI otherwise clones recursively; set it when the listed
+# skills do not live in a submodule and the submodules are large.
 agentSkills:
   lijinpei-amd/skills:
     commit: 49c2b87e0976ac668d0dd8d2af6549bc0f5f2eac  # main on 2026-11-17
@@ -58,3 +62,22 @@ agentSkills:
       - docx
       - pptx
       - pdf
+  # The rocprofiler-sdk and rocprofiler-compute profiling skills. Its
+  # submodules (perfetto, opencode, rccl's dependencies) add some 6 minutes to
+  # the clone and hold none of these skills.
+  ROCm/rocm-systems:
+    commit: eeb5a576604afb6bba3919b17108df18218b7694  # develop on 2026-11-06
+    submodules: false
+    skills:
+      # projects/rocprofiler-sdk/skills
+      - rocprofv3
+      - thread-trace
+      - pc-sampling
+      - rocprofv3-doctor
+      # projects/rocprofiler-compute/skills
+      - rocprof-compute-kernel-bottleneck
+      - rocprof-compute-speed-of-light
+      - rocprof-compute-memory
+      - rocprof-compute-roofline
+      - rocprof-compute-pc-sampling
+      - rocprof-compute-torch-trace

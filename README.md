@@ -97,6 +97,8 @@ Each source is pinned to a full commit, so every machine gets the same
 reviewed version, and `npx skills update` leaves the skills there. To update a
 source, set its `commit` to a newer one, such as the output of
 `git ls-remote https://github.com/<source> HEAD`, review the change, and apply.
+A source marked `submodules: false`, such as the ROCm/rocm-systems monorepo
+with its profiling skills, is cloned without its git submodules.
 
 superpowers and i-have-adhd stay Claude Code and Codex plugins and pi packages,
 because they also ship SessionStart hooks and a pi extension. They are the only

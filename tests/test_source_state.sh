@@ -469,6 +469,18 @@ ln -s "../../.agents/skills/$last_listed" "$test_home/.claude/skills/$last_liste
 run_script run_onchange_after_skills-install.sh.tmpl "$stubs"
 run_script run_onchange_after_skills-install.sh.tmpl "$tmp/minbin"
 grep -Fq 'npx is not on PATH' "$tmp/stderr"
+# A source marked submodules: false is added with submodule.active matching
+# no path, so the CLI's `git submodule update --init` clones none; others keep
+# their submodules.
+cm --override-data '{"agentSkills": {"anthropics/skills": {"submodules": false}}}' \
+    execute-template < "$repo_root/.chezmoiscripts/run_onchange_after_skills-install.sh.tmpl" \
+    > "$tmp/script.sh"
+grep -B2 -F 'add anthropics/skills@' "$tmp/script.sh" | grep -Fq 'GIT_CONFIG_KEY_0=submodule.active'
+grep -B2 -F 'add mattpocock/skills@' "$tmp/script.sh" > "$tmp/mattpocock"
+if grep -Fq 'GIT_CONFIG' "$tmp/mattpocock"; then
+    echo "error: the install script skipped submodules of an unmarked source" >&2
+    exit 1
+fi
 # Each source is pinned to a full commit: the CLI would take a short one for a
 # skill name, so the install script refuses to render with one.
 if cm --override-data '{"agentSkills": {"anthropics/skills": {"commit": "e4bb5d9"}}}' \
