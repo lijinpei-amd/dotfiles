@@ -1,0 +1,66 @@
+{{- /* The jinpei-skills, mattpocock-skills, and document-skills plugins, and
+       pi's jinpei-skills package, are now skills listed in
+       .chezmoidata/skills.yaml, and the Claude, Codex, and pi settings no
+       longer enable them. This removes what earlier applies left installed. It
+       looks for leftovers while rendering, and renders empty once there are
+       none, so it runs on every apply until they are gone, and a step that
+       could not run or failed is retried on the next one.
+
+       Codex and pi keep plugins and packages in caches their settings point
+       into, which no longer reference these, so those directories are deleted
+       directly. Claude records installed plugins and marketplaces in its own
+       registry, so it goes through the claude CLI. */ -}}
+{{- $home := .chezmoi.homeDir -}}
+{{- $retired := list "jinpei-skills" "mattpocock" "anthropic-agent-skills" -}}
+{{- $plugins := list -}}
+{{- $installed := joinPath $home ".claude" "plugins" "installed_plugins.json" -}}
+{{- if stat $installed -}}
+{{-   range $id, $_ := (include $installed | fromJson).plugins -}}
+{{-     if has (splitList "@" $id | last) $retired -}}
+{{-       $plugins = append $plugins $id -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- $marketplaces := list -}}
+{{- $known := joinPath $home ".claude" "plugins" "known_marketplaces.json" -}}
+{{- if stat $known -}}
+{{-   range $name, $_ := include $known | fromJson -}}
+{{-     if has $name $retired -}}
+{{-       $marketplaces = append $marketplaces $name -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- $dirs := list -}}
+{{- range list ".codex/plugins/cache/jinpei-skills"
+               ".codex/.tmp/marketplaces/jinpei-skills"
+               ".pi/agent/git/github.com/lijinpei-amd/skills" -}}
+{{-   if stat (joinPath $home .) -}}
+{{-     $dirs = append $dirs . -}}
+{{-   end -}}
+{{- end -}}
+{{- if or $plugins $marketplaces $dirs -}}
+#!/bin/bash
+# Remove the retired skill plugins; see the comment in
+# run_before_retire-skill-plugins.sh.tmpl. Failures warn rather than stop the
+# apply.
+set -uo pipefail
+{{ range $dirs -}}
+rm -rf -- "$HOME/{{ . }}"
+{{ end -}}
+{{ if or $plugins $marketplaces -}}
+{{   if lookPath "claude" -}}
+{{     range $plugins -}}
+claude plugin uninstall {{ squote . }} >/dev/null ||
+	echo "warning: could not uninstall Claude plugin {{ . }}" >&2
+{{     end -}}
+{{     range $marketplaces -}}
+claude plugin marketplace remove {{ squote . }} >/dev/null ||
+	echo "warning: could not remove Claude marketplace {{ . }}" >&2
+{{     end -}}
+{{   else -}}
+echo "warning: claude is not on PATH, so the retired Claude plugins and" \
+	"marketplaces {{ concat $plugins $marketplaces | join " " }} stay until an" \
+	"apply with claude on PATH." >&2
+{{   end -}}
+{{ end -}}
+{{ end -}}

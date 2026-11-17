@@ -12,39 +12,38 @@
      machine's app install.
      Managing the whole file would leave it permanently dirty in `chezmoi diff`,
      so the settings below are enforced and those section families and keys are
-     passed through untouched -- except the jinpei-skills, superpowers-dev, and
-     i-have-adhd marketplaces and their plugins, which are enforced so a new
-     machine gets them too (see $pluginTables). A template rather than a script
-     so it needs no shell, which Windows lacks.
+     passed through untouched -- except plugins. The superpowers-dev and
+     i-have-adhd marketplaces and their plugins are enforced so a new machine
+     gets them too (see $pluginTables), and every other plugin, whether Codex
+     bundled it or it was added by hand, is kept but disabled: skills come only
+     from those plugins and from .chezmoidata/skills.yaml. Codex leaves a
+     disabled plugin disabled. A template rather than a script so it needs no
+     shell, which Windows lacks.
 
      The managed tables are enforced but left wherever Codex has put them:
      Codex inserts its own [marketplaces] and [plugins] tables beside them, so
      moving them back on each apply would leave the file permanently dirty. Each
      is rewritten in place, or appended if missing; any other plugin table from
-     a managed marketplace is dropped. Codex reads a Git marketplace only from
-     its snapshot under .codex/.tmp, which
-     .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh creates.
-
-     amdgpu-isa-builder is off between rebuilds of the amd-gpu-isa skill: an
-     enabled plugin costs context in every session. `codex plugin add
-     amdgpu-isa-builder@jinpei-skills` turns it on for a rebuild; the next
-     chezmoi apply turns it off again. */ -}}
+     a managed marketplace, or from the retired jinpei-skills marketplace whose
+     skills the skills CLI now installs, is dropped. Codex reads a Git
+     marketplace only from its snapshot under .codex/.tmp, which
+     .chezmoiscripts/run_onchange_after_codex-marketplace-upgrade.sh.tmpl
+     creates. */ -}}
 {{- $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
 {{- $pluginTables := list
-      (list `[marketplaces.jinpei-skills]` `source_type = "git"` `source = "https://github.com/lijinpei-amd/skills.git"`)
-      (list `[plugins."working-on-llvm@jinpei-skills"]` `enabled = true`)
-      (list `[plugins."locking-gpus@jinpei-skills"]` `enabled = true`)
-      (list `[plugins."capture-att-trace@jinpei-skills"]` `enabled = true`)
-      (list `[plugins."writing-python-docstrings-and-comments@jinpei-skills"]` `enabled = true`)
-      (list `[plugins."amdgpu-isa-builder@jinpei-skills"]` `enabled = false`)
       (list `[marketplaces.superpowers-dev]` `source_type = "git"` `source = "https://github.com/obra/superpowers.git"`)
       (list `[plugins."superpowers@superpowers-dev"]` `enabled = true`)
       (list `[marketplaces.i-have-adhd]` `source_type = "git"` `source = "https://github.com/ayghri/i-have-adhd.git"`)
       (list `[plugins."i-have-adhd@i-have-adhd"]` `enabled = true`) -}}
 {{- $bodies := dict -}}
+{{- $owned := list "jinpei-skills" -}}
 {{- range $pluginTables -}}
 {{-   $_ := set $bodies (first .) (rest .) -}}
+{{-   if regexMatch `^\[marketplaces\.` (first .) -}}
+{{-     $owned = append $owned (regexReplaceAll `^\[marketplaces\.(.*)\]$` (first .) "$1" | regexQuoteMeta) -}}
+{{-   end -}}
 {{- end -}}
+{{- $ownedRe := join "|" $owned -}}
 {{- /* Sections Codex owns: the table itself ("[hooks.state]") and any subtable
        ("[projects.\"/path\"]"); everything until the next header is kept.
        Lines go to $state; a rewritten table owes a blank separator before the
@@ -86,7 +85,11 @@
 {{-       $emit = prepend (get $bodies $line) $line -}}
 {{-       $_ := set $written $line true -}}
 {{-       $keep = false -}}
-{{-     else if regexMatch `^\[(marketplaces\.(jinpei-skills|superpowers-dev|i-have-adhd)|plugins\."[^"]*@(jinpei-skills|superpowers-dev|i-have-adhd)")\]` $line -}}
+{{-     else if regexMatch (printf `^\[(marketplaces\.(%s)|plugins\."[^"]*@(%s)")\]` $ownedRe $ownedRe) $line -}}
+{{-       $keep = false -}}
+{{-     else if regexMatch `^\[plugins\."[^"]*"\]$` $line -}}
+{{-       $emit = list $line "enabled = false" -}}
+{{-       $_ := set $written $line true -}}
 {{-       $keep = false -}}
 {{-     end -}}
 {{-   else if and $inFeatures (regexMatch `^[[:space:]]*[^[:space:]#]` $line) (not (regexMatch `^[[:space:]]*(auth_elicitation|hooks|memories)[[:space:]]*=` $line)) -}}

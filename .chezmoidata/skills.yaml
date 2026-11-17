@@ -1,0 +1,60 @@
+# The skills CLI release the scripts run, pinned so a new one cannot change
+# what they do unreviewed.
+skillsCli: skills@1.9.0
+
+# The agent skills Claude Code, Codex, and pi get, by GitHub source, each
+# pinned to a full commit, as .chezmoiexternal.toml.tmpl pins its trees, so
+# every machine gets the same reviewed version; `npx skills update` leaves them
+# there. To update a source, set its commit to a newer one, such as the output
+# of `git ls-remote https://github.com/<source> HEAD`, and apply.
+# .chezmoiscripts/run_onchange_after_skills-install.sh.tmpl installs them with
+# the skills CLI. Every other user-level skill shows in chezmoi status as one
+# to delete, and apply removes it: see run_before_skills-prune.sh.tmpl.
+agentSkills:
+  lijinpei-amd/skills:
+    commit: 49c2b87e0976ac668d0dd8d2af6549bc0f5f2eac  # main on 2026-11-17
+    skills:
+      - working-on-llvm
+      - locking-gpus
+      - capture-att-trace
+      - writing-python-docstrings-and-comments
+  # The mattpocock-skills plugin's list, from its .claude-plugin/plugin.json
+  # (1.3.2); the repository also holds in-progress and misc skills.
+  mattpocock/skills:
+    commit: 5863806dd4e15c63174bee4e7515a4256792ecfa  # main on 2026-11-17
+    skills:
+      - ask-matt
+      - diagnosing-bugs
+      - grill-with-docs
+      - triage
+      - improve-codebase-architecture
+      - setup-matt-pocock-skills
+      - tdd
+      - to-spec
+      - to-tickets
+      - wayfinder
+      - implement
+      - implement-spec
+      - prototype
+      - research
+      - domain-modeling
+      - codebase-design
+      - code-review
+      - pr
+      - retro
+      - wizard
+      - grill-me
+      - grilling
+      - handoff
+      - teach
+      - to-questionnaire
+      - wait-what
+      - writing-for-agents
+  # The document-skills plugin.
+  anthropics/skills:
+    commit: e4bb5d960d87126ff3b3a8af1a104b7db67560ba  # main on 2026-11-17
+    skills:
+      - xlsx
+      - docx
+      - pptx
+      - pdf

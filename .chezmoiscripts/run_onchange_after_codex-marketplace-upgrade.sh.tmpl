@@ -9,12 +9,17 @@ set -euo pipefail
 codex plugin marketplace upgrade
 
 # upgrade installs the configured plugins only when the snapshot changes, so add
-# any still missing from the cache. `plugin add` also sets enabled = true; put
-# back the config chezmoi just wrote, which holds the intended flags.
+# any enabled plugin still missing from the cache; the config chezmoi just wrote
+# enables only the managed ones. `plugin add` also sets enabled = true; put
+# back that config, which holds the intended flags.
 config="$HOME/.codex/config.toml"
 cp -p -- "$config" "$config.chezmoi-orig"
 trap 'mv -f -- "$config.chezmoi-orig" "$config"' EXIT
-sed -n 's/^\[plugins\."\([^"@]*\)@\(jinpei-skills\|superpowers-dev\|i-have-adhd\)"\]$/\1 \2/p' "$config" |
+awk '
+	/^\[/ { plugin = "" }
+	/^\[plugins\."[^"@]*@[^"]*"\]$/ { plugin = substr($0, 11, length($0) - 12) }
+	plugin != "" && /^enabled = true$/ { sub("@", " ", plugin); print plugin }
+' "$config" |
 while read -r plugin marketplace; do
 	if [ ! -d "$HOME/.codex/plugins/cache/$marketplace/$plugin" ]; then
 		codex plugin add "$plugin@$marketplace"

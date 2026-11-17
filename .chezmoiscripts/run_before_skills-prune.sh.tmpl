@@ -1,0 +1,41 @@
+{{- /* The user-level skill directories of Claude Code, Codex, and pi are exact_
+       directories that ignore the skills in .chezmoidata/skills.yaml, so
+       chezmoi status shows any other entry as one to delete (D), and apply
+       deletes it. Deleting a skill the skills CLI installed would leave its
+       lock entry, and `npx skills update -g` reinstalls a locked skill whose
+       folder is missing; so this removes those through the CLI first. It
+       reads the lock while rendering, at the path the CLI uses, and renders
+       empty when the lock holds no unlisted skill, so status and diff stay
+       clean. Without npx it fails, stopping the apply before the folders are
+       deleted. */ -}}
+{{- $lock := joinPath .chezmoi.homeDir ".agents" ".skill-lock.json" -}}
+{{- with env "XDG_STATE_HOME" -}}
+{{-   $lock = joinPath . "skills" ".skill-lock.json" -}}
+{{- end -}}
+{{- $wanted := list -}}
+{{- range .agentSkills -}}
+{{-   $wanted = concat $wanted .skills -}}
+{{- end -}}
+{{- $stray := list -}}
+{{- if stat $lock -}}
+{{-   range $name, $_ := (include $lock | fromJson).skills -}}
+{{-     if not (has $name $wanted) -}}
+{{-       $stray = append $stray $name -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- if $stray -}}
+#!/bin/bash
+# Remove skills the skills CLI tracks that .chezmoidata/skills.yaml does not
+# list; see the comment in run_before_skills-prune.sh.tmpl.
+set -euo pipefail
+{{ if lookPath "npx" -}}
+DISABLE_TELEMETRY=1 npx -y {{ .skillsCli }} remove --global --yes
+{{- range $stray }} {{ squote . }}{{ end }}
+{{ else -}}
+echo "error: the skills CLI lock lists {{ join " " $stray }}, which" \
+	".chezmoidata/skills.yaml does not; removing them needs npx, which is not" \
+	"on PATH. Run chezmoi apply with Node.js on PATH." >&2
+exit 1
+{{ end -}}
+{{ end -}}

@@ -25,6 +25,8 @@ class PiProviderTests(unittest.TestCase):
         for name in ("private_models.json.tmpl", "modify_settings.json"):
             shutil.copyfile(REPO_ROOT / "private_dot_pi/private_agent" / name, agent / name)
         shutil.copyfile(REPO_ROOT / ".chezmoiignore", self.source / ".chezmoiignore")
+        # .chezmoiignore lists the skills from .chezmoidata.
+        shutil.copytree(REPO_ROOT / ".chezmoidata", self.source / ".chezmoidata")
         self.env = {
             **os.environ,
             "HOME": str(self.home),

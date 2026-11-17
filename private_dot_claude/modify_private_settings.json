@@ -5,7 +5,8 @@
        model preferences: managed top-level keys replace the current ones, env is
        merged, and every other key is passed through. A template rather than a
        script so it needs no shell or jq, which Windows lacks. Keys come out
-       sorted. */ -}}
+       sorted. Skills come from the skills CLI, not plugins: see
+       .chezmoidata/skills.yaml. */ -}}
 {{- $llmProxyBaseUrl := index . "llmProxyBaseUrl" | default "http://127.0.0.1:30101" | trimSuffix "/" -}}
 {{- $managed := `{
   "env": {
@@ -22,14 +23,7 @@
     "pyright-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "i-have-adhd@i-have-adhd": true,
-    "superpowers@superpowers-dev": true,
-    "mattpocock-skills@mattpocock": true,
-    "working-on-llvm@jinpei-skills": true,
-    "locking-gpus@jinpei-skills": true,
-    "capture-att-trace@jinpei-skills": true,
-    "writing-python-docstrings-and-comments@jinpei-skills": true,
-    "amdgpu-isa-builder@jinpei-skills": false,
-    "document-skills@anthropic-agent-skills": true
+    "superpowers@superpowers-dev": true
   },
   "extraKnownMarketplaces": {
     "i-have-adhd": {
@@ -42,24 +36,6 @@
       "source": {
         "source": "git",
         "url": "https://github.com/obra/superpowers.git"
-      }
-    },
-    "mattpocock": {
-      "source": {
-        "source": "github",
-        "repo": "mattpocock/skills"
-      }
-    },
-    "jinpei-skills": {
-      "source": {
-        "source": "github",
-        "repo": "lijinpei-amd/skills"
-      }
-    },
-    "anthropic-agent-skills": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/skills"
       }
     }
   },

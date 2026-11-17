@@ -1,0 +1,53 @@
+#!/bin/bash
+# Install the skills in .chezmoidata/skills.yaml with the skills CLI
+# (github.com/vercel-labs/skills) into ~/.agents/skills, which Codex and pi
+# read, linked from ~/.claude/skills. Re-runs whenever that list changes;
+# `npx skills update -g` pulls newer upstream versions in between. Every other
+# skill is removed: see run_before_skills-prune.sh.tmpl.
+#
+# superpowers and i-have-adhd stay plugins and pi packages: they ship
+# SessionStart hooks and a pi extension, which the skills CLI does not install.
+{{ if lookPath "npx" -}}
+set -euo pipefail
+# npx does not enforce the CLI's engines field.
+# shellcheck disable=SC2016 # JavaScript, expanded by node
+node -e '
+	const [major, minor] = process.versions.node.split(".").map(Number);
+	if (major < 22 || (major === 22 && minor < 20)) {
+		console.error(`error: the skills CLI needs Node.js 22.20 or later, not ${process.version}`);
+		process.exit(1);
+	}
+'
+export DISABLE_TELEMETRY=1
+{{ range $source, $pin := .agentSkills }}
+{{- /* Only a full commit is a checkout pin: the CLI takes anything else after
+       the @ for a skill name. */ -}}
+{{- if not (regexMatch `^[0-9a-f]{40}$` ($pin.commit | default "")) }}
+{{-   fail (printf "agentSkills.%s.commit in .chezmoidata/skills.yaml must be a full 40-character commit" $source) }}
+{{- end }}
+npx -y {{ $.skillsCli }} add {{ $source }}@{{ $pin.commit }} --global \
+	--agent claude-code codex pi --yes --skill {{ join " " $pin.skills }}
+{{- end }}
+
+# skills add skips a --skill name its source lacks, such as a typo or a skill
+# renamed upstream, and fails only when none match. Failing here instead keeps
+# this script due, so the next apply tries again.
+missing=()
+for name in{{ range .agentSkills }} {{ join " " .skills }}{{ end }}; do
+	if [ ! -f "$HOME/.agents/skills/$name/SKILL.md" ] ||
+		[ ! -f "$HOME/.claude/skills/$name/SKILL.md" ]; then
+		missing+=("$name")
+	fi
+done
+if [ ${#missing[@]} -gt 0 ]; then
+	echo "error: not installed: ${missing[*]}. Check these names in" \
+		".chezmoidata/skills.yaml against \`npx skills add <source> --list\`." >&2
+	exit 1
+fi
+{{ else -}}
+# Without npx this warns once; the install runs on the first apply with npx on
+# PATH, since that changes this script.
+echo "warning: npx is not on PATH, so the skills in .chezmoidata/skills.yaml" \
+	"are not installed. Put Node.js 22.20 or later on PATH and run chezmoi" \
+	"apply again." >&2
+{{ end -}}

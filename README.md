@@ -8,7 +8,8 @@ The repository manages:
 - Git identity, defaults, and global ignore rules;
 - Readline, tmux, and Neovim configuration;
 - ccache and GDB configuration for LLVM worktrees;
-- Claude Code, Codex, and pi settings.
+- Claude Code, Codex, and pi settings;
+- agent skills shared by Claude Code, Codex, and pi.
 
 The ccache, GDB, Git, Claude Code, Codex, and pi files are templates. Absolute paths are
 rendered from the home directory chezmoi applies to.
@@ -72,6 +73,37 @@ chezmoi apply ~/.pi/agent/models.json ~/.pi/agent/settings.json
 ```
 
 The rendered `models.json` is owner-only because it can contain this key.
+
+## Agent Skills
+
+`.chezmoidata/skills.yaml` lists the skills Claude Code, Codex, and pi get, by
+GitHub source. On `chezmoi apply`, the [skills CLI](https://github.com/vercel-labs/skills)
+(`npx skills`, Node.js 22.20 or later) installs them into `~/.agents/skills`,
+which Codex and pi read, with symlinks from `~/.claude/skills`. To add or drop
+a skill, edit the list and apply. Without `npx` on `PATH`, apply warns once and
+installs them on the first apply that has it.
+
+The skill directories `~/.agents/skills`, `~/.claude/skills`,
+`~/.codex/skills`, and `~/.pi/agent/skills` are exact: any skill not in the
+list shows in `chezmoi status` and `chezmoi diff` as one to delete (`D`), and
+apply deletes it, a hand-made one included, so check the diff first. One the
+skills CLI installed is removed through `npx skills remove` first, so
+`npx skills update` does not bring it back; without `npx`, apply stops instead.
+So a skill used only for a while, such as `amdgpu-isa-builder` for a rebuild of
+the amd-gpu-isa skill, goes in the list for that while. Codex's bundled skills
+in `~/.codex/skills/.system` are left alone.
+
+Each source is pinned to a full commit, so every machine gets the same
+reviewed version, and `npx skills update` leaves the skills there. To update a
+source, set its `commit` to a newer one, such as the output of
+`git ls-remote https://github.com/<source> HEAD`, review the change, and apply.
+
+superpowers and i-have-adhd stay Claude Code and Codex plugins and pi packages,
+because they also ship SessionStart hooks and a pi extension. They are the only
+plugins that bring skills: Claude Code and pi enable only the managed plugins
+and packages, and any other Codex plugin, one Codex bundles or one added with
+`codex plugin add`, is kept but disabled. The plugins the skills replaced are
+uninstalled on each apply until none are left.
 
 ## Windows
 

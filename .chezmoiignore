@@ -29,6 +29,16 @@ AppData/**
 {{ end -}}
 .env.sh
 .env_login.sh
+{{- /* The skill directories are exact_: chezmoi deletes whatever it does not
+       manage there. The listed skills are installed by the skills CLI, not
+       chezmoi; ignoring them keeps them. See .chezmoidata/skills.yaml. */}}
+{{ range .agentSkills -}}
+{{   range .skills -}}
+.agents/skills/{{ . }}
+.claude/skills/{{ . }}
+{{   end -}}
+{{ end -}}
+.codex/skills/.system
 {{- /* pi's models.json needs a machine-local gateway or DeepSeek API key. */}}
 {{ if not (or (index . "llmProxyBaseUrl" | default "" | trim) (index . "deepseekApiKey" | default "" | trim)) -}}
 .pi/agent/models.json

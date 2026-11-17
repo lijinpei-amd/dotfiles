@@ -2,7 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-chezmoi_bin="${CHEZMOI:-chezmoi}"
+# Absolute, so tests can run chezmoi with a PATH that lacks it.
+chezmoi_bin="$(command -v -- "${CHEZMOI:-chezmoi}")"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/chezmoi-source-test.XXXXXX")"
 trap 'rm -rf -- "$tmp"' EXIT
 
@@ -74,18 +75,31 @@ codeFontSize = 13
 [notice.model_migrations]
 "old-model" = "new-model"
 
-[marketplaces.jinpei-skills]
+[marketplaces.superpowers-dev]
 source_type = "local"
-source = "/stale/skills"
+source = "/stale/superpowers"
 
 [marketplaces.codex-owned]
 source_type = "local"
 source = "/seeded/marketplace"
 
-[plugins."working-on-llvm@jinpei-skills"]
+[plugins."superpowers@superpowers-dev"]
 enabled = false
 
-[plugins."retired@jinpei-skills"]
+[plugins."retired@superpowers-dev"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."hand-added@elsewhere"]
+enabled = true
+
+[marketplaces.jinpei-skills]
+source_type = "git"
+source = "https://github.com/lijinpei-amd/skills.git"
+
+[plugins."working-on-llvm@jinpei-skills"]
 enabled = true
 TOML
 
@@ -173,6 +187,12 @@ assert settings["env"]["ANTHROPIC_API_KEY"] == "dummy"
 assert "ANTHROPIC_CUSTOM_HEADERS" not in settings["env"]
 assert settings["env"]["KEEP_ME"] == "seeded-env"
 assert settings["modelSettings"] == {"seeded-model": {"effortLevel": "high"}}
+# Skills come from the skills CLI; only hook-carrying plugins stay.
+assert settings["enabledPlugins"]["superpowers@superpowers-dev"] is True
+assert settings["enabledPlugins"]["i-have-adhd@i-have-adhd"] is True
+for retired in ("jinpei-skills", "mattpocock", "anthropic-agent-skills"):
+    assert not any(p.endswith("@" + retired) for p in settings["enabledPlugins"])
+    assert retired not in settings["extraKnownMarketplaces"]
 PY
 python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' \
     "$test_home/.codex/config.toml"
@@ -259,27 +279,31 @@ if grep -Fq 'stale-model' "$test_home/.codex/config.toml"; then
 fi
 grep -Fq '[projects."/seeded/project"]' "$test_home/.codex/config.toml"
 grep -Fq '"old-model" = "new-model"' "$test_home/.codex/config.toml"
-if grep -Fq '/stale/skills' "$test_home/.codex/config.toml"; then
-    echo "error: Codex config kept a stale jinpei-skills marketplace" >&2
+if grep -Fq '/stale/superpowers' "$test_home/.codex/config.toml"; then
+    echo "error: Codex config kept a stale superpowers-dev marketplace" >&2
     exit 1
 fi
-grep -Fq 'source = "https://github.com/lijinpei-amd/skills.git"' \
-    "$test_home/.codex/config.toml"
-# jinpei-skills tables are corrected where Codex put them, not moved: Codex
-# inserts its own tables beside them, and moving them would never settle.
+if grep -Fq 'jinpei-skills' "$test_home/.codex/config.toml"; then
+    echo "error: Codex config kept the retired jinpei-skills plugins" >&2
+    exit 1
+fi
+# Managed tables are corrected where Codex put them, not moved: Codex inserts
+# its own tables beside them, and moving them would never settle.
 header_line() {
     grep -nF "$1" "$test_home/.codex/config.toml" | cut -d: -f1
 }
-test "$(header_line '[marketplaces.jinpei-skills]')" -lt "$(header_line '[marketplaces.codex-owned]')"
+test "$(header_line '[marketplaces.superpowers-dev]')" -lt "$(header_line '[marketplaces.codex-owned]')"
 test "$(header_line '[marketplaces.codex-owned]')" -lt \
-    "$(header_line '[plugins."working-on-llvm@jinpei-skills"]')"
+    "$(header_line '[plugins."superpowers@superpowers-dev"]')"
 python3 - "$test_home/.codex/config.toml" <<'PY'
 import sys, tomllib
 config = tomllib.load(open(sys.argv[1], "rb"))
 plugins = config["plugins"]
-assert plugins["working-on-llvm@jinpei-skills"] == {"enabled": True}, plugins
-assert plugins["amdgpu-isa-builder@jinpei-skills"] == {"enabled": False}, plugins
-assert "retired@jinpei-skills" not in plugins, plugins
+assert "retired@superpowers-dev" not in plugins, plugins
+# Plugins from other marketplaces stay, disabled: skills come only from the
+# managed plugins and the skills CLI.
+assert plugins["visualize@openai-bundled"] == {"enabled": False}, plugins
+assert plugins["hand-added@elsewhere"] == {"enabled": False}, plugins
 assert plugins["superpowers@superpowers-dev"] == {"enabled": True}, plugins
 assert plugins["i-have-adhd@i-have-adhd"] == {"enabled": True}, plugins
 marketplaces = config["marketplaces"]
@@ -294,7 +318,11 @@ PY
 pi_settings="$test_home/.pi/agent/settings.json"
 test "$(jq -r .defaultModel "$pi_settings")" = seeded-model
 test "$(jq -r .lastChangelogVersion "$pi_settings")" = 9.9.9
-jq -e '.packages | index("git:github.com/lijinpei-amd/skills")' "$pi_settings" >/dev/null
+jq -e '.packages | index("https://github.com/ayghri/i-have-adhd")' "$pi_settings" >/dev/null
+if jq -e '.packages | index("git:github.com/lijinpei-amd/skills")' "$pi_settings" >/dev/null; then
+    echo "error: pi settings kept the retired jinpei-skills package" >&2
+    exit 1
+fi
 test "$(jq -c .skills "$pi_settings")" = "[]"
 jq -e '.packages | any(type == "object" and
     .source == "git:github.com/lijinpei/pi-extensions@feat/models-discovery-catalog-and-tests")' \
@@ -347,8 +375,152 @@ assert {key: value["baseUrl"] for key, value in providers.items()} == {
 PY
 done
 
-for script in "$repo_root"/.chezmoiscripts/*.tmpl; do
-    cm execute-template < "$script" | bash -n
+skills_cli="$(cm execute-template '{{ .skillsCli }}')"
+read -r -a listed_skills <<< \
+    "$(cm execute-template '{{ range .agentSkills }}{{ join " " .skills }} {{ end }}')"
+listed="${listed_skills[0]}"
+last_listed="${listed_skills[${#listed_skills[@]} - 1]}"
+
+# The skill directories are exact_ and ignore the listed skills, so chezmoi
+# status shows every other entry as one to delete, apply deletes it, and
+# Codex's bundled .system skills are left alone.
+mkdir -p "$test_home/.agents/skills/$listed/references" \
+    "$test_home/.agents/skills/stray-dir" \
+    "$test_home/.codex/skills/.system/imagegen" \
+    "$test_home/.codex/skills/stray-codex"
+ln -s "../../.agents/skills/$listed" "$test_home/.claude/skills/$listed"
+ln -s ../../.agents/skills/stray-dir "$test_home/.claude/skills/stray-link"
+test "$(cm status --exclude=scripts)" = "$(printf ' D %s\n' \
+    .agents/skills/stray-dir .claude/skills/stray-link .codex/skills/stray-codex)"
+cm --force --no-tty apply --exclude=scripts
+test -z "$(cm status --exclude=scripts)"
+test -d "$test_home/.agents/skills/$listed/references"
+test -e "$test_home/.claude/skills/$listed"
+test -d "$test_home/.codex/skills/.system/imagegen"
+test ! -e "$test_home/.agents/skills/stray-dir"
+test ! -L "$test_home/.claude/skills/stray-link"
+test ! -e "$test_home/.codex/skills/stray-codex"
+
+# The skill scripts render and run against the test home with a controlled
+# PATH: $tmp/minbin holds only rm, and $tmp/bin holds stubs for npx, node, and
+# claude that record their arguments.
+mkdir -p "$tmp/minbin" "$tmp/bin"
+ln -s "$(command -v rm)" "$tmp/minbin/rm"
+for tool in npx node claude; do
+    printf '#!/bin/sh\necho "$*" >> "%s/%s-args"\n' "$tmp" "$tool" > "$tmp/bin/$tool"
+    chmod +x "$tmp/bin/$tool"
+done
+stubs="$tmp/bin:$tmp/minbin"
+render_script() { # name path
+    PATH="$2" XDG_STATE_HOME="" cm execute-template \
+        < "$repo_root/.chezmoiscripts/$1" > "$tmp/script.sh"
+}
+run_script() { # name path
+    render_script "$@"
+    HOME="$test_home" XDG_STATE_HOME="" PATH="$2" "$BASH" "$tmp/script.sh" \
+        2> "$tmp/stderr"
+}
+renders_empty() { # name path
+    render_script "$@"
+    ! grep -q '[^[:space:]]' "$tmp/script.sh"
+}
+
+# With nothing to remove, the prune and retire scripts render empty, so
+# chezmoi status and diff stay clean.
+renders_empty run_before_skills-prune.sh.tmpl "$stubs"
+renders_empty run_before_retire-skill-plugins.sh.tmpl "$stubs"
+lock="$test_home/.agents/.skill-lock.json"
+printf '{"version": 3, "skills": {"%s": {}}}' "$listed" > "$lock"
+renders_empty run_before_skills-prune.sh.tmpl "$stubs"
+
+# A skill the lock tracks but the list lacks is removed through the skills
+# CLI, so `npx skills update` cannot reinstall it; without npx the script fails,
+# stopping the apply before chezmoi deletes the folder.
+printf '{"version": 3, "skills": {"%s": {}, "stray-tracked": {}}}' "$listed" \
+    > "$lock"
+run_script run_before_skills-prune.sh.tmpl "$stubs"
+test "$(cat "$tmp/npx-args")" = "-y $skills_cli remove --global --yes stray-tracked"
+if run_script run_before_skills-prune.sh.tmpl "$tmp/minbin"; then
+    echo "error: the prune script passed without npx" >&2
+    exit 1
+fi
+grep -Fq 'stray-tracked' "$tmp/stderr"
+rm -- "$lock" "$tmp/npx-args"
+
+# The install script adds each source's listed skills to all three agents,
+# then fails while a listed skill is missing from either skill directory, as
+# when the stub npx installs nothing, and without npx warns instead.
+for name in "${listed_skills[@]}"; do
+    [ "$name" = "$last_listed" ] && continue
+    mkdir -p "$test_home/.agents/skills/$name"
+    touch "$test_home/.agents/skills/$name/SKILL.md"
+    ln -sfn "../../.agents/skills/$name" "$test_home/.claude/skills/$name"
+done
+if run_script run_onchange_after_skills-install.sh.tmpl "$stubs"; then
+    echo "error: the install script passed with $last_listed missing" >&2
+    exit 1
+fi
+grep -Fq "not installed: $last_listed." "$tmp/stderr"
+test "$(cat "$tmp/npx-args")" = "$(cm execute-template \
+    '{{ range $source, $pin := .agentSkills }}-y {{ $.skillsCli }} add {{ $source }}@{{ $pin.commit }} --global --agent claude-code codex pi --yes --skill {{ join " " $pin.skills }}{{ "\n" }}{{ end }}')"
+mkdir -p "$test_home/.agents/skills/$last_listed"
+touch "$test_home/.agents/skills/$last_listed/SKILL.md"
+ln -s "../../.agents/skills/$last_listed" "$test_home/.claude/skills/$last_listed"
+run_script run_onchange_after_skills-install.sh.tmpl "$stubs"
+run_script run_onchange_after_skills-install.sh.tmpl "$tmp/minbin"
+grep -Fq 'npx is not on PATH' "$tmp/stderr"
+# Each source is pinned to a full commit: the CLI would take a short one for a
+# skill name, so the install script refuses to render with one.
+if cm --override-data '{"agentSkills": {"anthropics/skills": {"commit": "e4bb5d9"}}}' \
+    execute-template < "$repo_root/.chezmoiscripts/run_onchange_after_skills-install.sh.tmpl" \
+    > /dev/null 2>&1; then
+    echo "error: the install script rendered with a short commit" >&2
+    exit 1
+fi
+
+# The retire script deletes Codex's and pi's caches of the retired plugins,
+# uninstalls Claude's through the claude CLI, warns when claude is missing,
+# and renders empty once nothing is left.
+mkdir -p "$test_home/.codex/plugins/cache/jinpei-skills/working-on-llvm/1.0.0" \
+    "$test_home/.pi/agent/git/github.com/lijinpei-amd/skills" \
+    "$test_home/.claude/plugins"
+printf '%s' '{"version": 2, "plugins": {"working-on-llvm@jinpei-skills": [],
+    "superpowers@superpowers-dev": []}}' \
+    > "$test_home/.claude/plugins/installed_plugins.json"
+printf '%s' '{"jinpei-skills": {}, "superpowers-dev": {}}' \
+    > "$test_home/.claude/plugins/known_marketplaces.json"
+run_script run_before_retire-skill-plugins.sh.tmpl "$tmp/minbin"
+test ! -e "$test_home/.codex/plugins/cache/jinpei-skills"
+test ! -e "$test_home/.pi/agent/git/github.com/lijinpei-amd/skills"
+grep -Fq 'claude is not on PATH' "$tmp/stderr"
+run_script run_before_retire-skill-plugins.sh.tmpl "$stubs"
+test "$(cat "$tmp/claude-args")" = "$(printf '%s\n' \
+    'plugin uninstall working-on-llvm@jinpei-skills' \
+    'plugin marketplace remove jinpei-skills')"
+printf '%s' '{"version": 2, "plugins": {"superpowers@superpowers-dev": []}}' \
+    > "$test_home/.claude/plugins/installed_plugins.json"
+printf '%s' '{"superpowers-dev": {}}' > "$test_home/.claude/plugins/known_marketplaces.json"
+renders_empty run_before_retire-skill-plugins.sh.tmpl "$stubs"
+
+# The Codex marketplace upgrade adds each enabled plugin missing from the
+# cache, which in the config chezmoi wrote means only the managed ones, then
+# puts that config back.
+printf '#!/bin/sh\necho "$*" >> "%s/codex-args"\n' "$tmp" > "$tmp/bin/codex"
+chmod +x "$tmp/bin/codex"
+cp -p "$test_home/.codex/config.toml" "$tmp/codex-config.toml"
+run_script run_onchange_after_codex-marketplace-upgrade.sh.tmpl "$tmp/bin:$PATH"
+test "$(cat "$tmp/codex-args")" = "$(printf '%s\n' \
+    'plugin marketplace upgrade' \
+    'plugin add superpowers@superpowers-dev' \
+    'plugin add i-have-adhd@i-have-adhd')"
+cmp "$tmp/codex-config.toml" "$test_home/.codex/config.toml"
+
+for script in "$repo_root"/.chezmoiscripts/*; do
+    if [[ $script == *.tmpl ]]; then
+        cm execute-template < "$script" | bash -n
+    else
+        bash -n "$script"
+    fi
 done
 
 # A config with msys2 set manages only what MSYS2 uses, for its own home on
